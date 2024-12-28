@@ -34,7 +34,6 @@ public class PlacedBlockManager {
       BlockPos pos = entry.getKey();
       long placedTime = entry.getValue();
 
-      // Проверяем, прошло ли время разрушения
       if (currentTime - placedTime >= breakDelay) {
         ServerLevel serverLevel = (ServerLevel) level;
         TotemSavedData data = TotemSavedData.get(serverLevel);

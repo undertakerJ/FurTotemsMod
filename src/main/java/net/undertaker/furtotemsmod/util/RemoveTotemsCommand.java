@@ -17,7 +17,7 @@ import java.util.UUID;
 public class RemoveTotemsCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("removetotems")
-                .requires(source -> source.hasPermission(2)) // Уровень разрешений для выполнения команды
+                .requires(source -> source.hasPermission(2))
                 .then(Commands.argument("player", EntityArgument.player())
                         .executes(context -> removeTotems(context.getSource(), EntityArgument.getPlayer(context, "player")))));
     }

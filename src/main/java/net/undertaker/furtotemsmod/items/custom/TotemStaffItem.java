@@ -52,13 +52,11 @@ public class TotemStaffItem extends Item {
       return InteractionResult.FAIL;
     }
 
-    // Проверка наличия требуемого блока
     if (!player.getInventory().contains(new ItemStack(materialType.getRequiredBlock()))) {
       player.displayClientMessage(Component.literal("У вас нет нужного блока: " + materialType.name()), true);
       return InteractionResult.FAIL;
     }
 
-    // Установка блока тотема
     BlockState totemBlockState = ModBlocks.UPGRADABLE_TOTEM.get().defaultBlockState();
     level.setBlock(pos, totemBlockState, 3);
 
@@ -66,7 +64,6 @@ public class TotemStaffItem extends Item {
       totemEntity.setOwner(player.getUUID());
       totemEntity.upgrade(materialType);
 
-      // Удаление блока из инвентаря
       removeItemFromInventory(player, materialType.getRequiredBlock().asItem(), 1);
       player.displayClientMessage(Component.literal("Тотем установлен с уровнем: " + materialType.name()), true);
       return InteractionResult.SUCCESS;

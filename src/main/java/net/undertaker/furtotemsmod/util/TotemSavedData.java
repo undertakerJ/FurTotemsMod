@@ -148,7 +148,6 @@ public class TotemSavedData extends SavedData {
         TotemData totemData = getTotemData(nearestTotem);
         if (totemData == null) return false;
 
-        // Проверяем пересечение радиуса и принадлежность игроку
         return nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)
                 && !totemData.getOwner().equals(playerUUID);
     }

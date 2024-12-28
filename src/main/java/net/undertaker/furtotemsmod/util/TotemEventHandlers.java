@@ -49,7 +49,6 @@ import net.undertaker.furtotemsmod.blocks.custom.UpgradableTotemBlock;
 @Mod.EventBusSubscriber(modid = FurTotemsMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class TotemEventHandlers {
 
-  // Удаление блока в зоне действия тотема
   @SubscribeEvent
   public static void onBlockBreakNearTotem(BlockEvent.BreakEvent event) {
     if (event.getLevel().isClientSide()) return;
@@ -74,7 +73,6 @@ public class TotemEventHandlers {
     }
   }
 
-  // Установка блока в зоне действия тотема
   @SubscribeEvent
   public static void onBlockPlaceNearTotem(BlockEvent.EntityPlaceEvent event) {
     if (event.getEntity().getLevel().isClientSide()) return;
@@ -102,6 +100,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+    if(Config.DISABLE_BLOCK_INTERACTION.get() == false) return;
     if (event.getLevel().isClientSide()) return;
     ServerLevel level = (ServerLevel) event.getLevel();
     Player player = event.getEntity();
@@ -115,9 +114,9 @@ public class TotemEventHandlers {
     }
   }
 
-  // RightClick on entity in zone
   @SubscribeEvent
   public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+    if(Config.DISABLE_ENTITY_INTERACTION.get() == false) return;
     if (event.getLevel().isClientSide()) return;
     ServerLevel level = (ServerLevel) event.getEntity().getLevel();
     Player player = event.getEntity();
@@ -133,6 +132,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onPistonExtend(PistonEvent.Pre event) {
+    if(Config.DISABLE_PISTON.get() == false) return;
     PistonStructureResolver resolver = event.getStructureHelper();
     if (resolver == null) return;
 
@@ -160,18 +160,18 @@ public class TotemEventHandlers {
 
   private static final List<FallingBlockEntity> fallingBlocks = new ArrayList<>();
 
-  // Track falling blocks entering the world
   @SubscribeEvent
   public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
+    if(Config.DISABLE_FALLING_ENTITIES.get() == false) return;
     if (event.getLevel().isClientSide) return;
     if (event.getEntity() instanceof FallingBlockEntity fallingBlock) {
       fallingBlocks.add(fallingBlock);
     }
   }
 
-  // Tick through tracked falling blocks
   @SubscribeEvent(priority = EventPriority.LOW)
   public static void onWorldTick(TickEvent.LevelTickEvent event) {
+    if(Config.DISABLE_FALLING_ENTITIES.get() == false) return;
     if (event.level.isClientSide || event.phase != TickEvent.Phase.END) return;
     if(event.level.getServer().getTickCount() % 10 != 0) return;
     ServerLevel level = (ServerLevel) event.level;
@@ -201,9 +201,9 @@ public class TotemEventHandlers {
     fallingBlocks.removeAll(toRemove);
   }
 
-  // Prevent hostile mobs from spawning in protected areas
   @SubscribeEvent
   public static void mobSpawnEvent(EntityJoinLevelEvent event) {
+    if(Config.PREVENT_MOB_SPAWN.get() == false) return;
     if (event.getLevel().isClientSide) return;
     if (!(event.getEntity() instanceof Monster monster)) return;
 
@@ -221,9 +221,9 @@ public class TotemEventHandlers {
     }
   }
 
-  // Disable breaking frames with punches
   @SubscribeEvent
   public static void onHangingEntityAttack(AttackEntityEvent event) {
+    if(Config.BREAKING_HANGING_ENTITIES.get() == false) return;
     if (event.getEntity().level.isClientSide()) return;
 
     if (event.getTarget() instanceof HangingEntity) {
@@ -242,6 +242,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onNeighborNotify(BlockEvent.NeighborNotifyEvent event) {
+    if(Config.DISABLE_FIRE_SPREAD.get() == false) return;
     if (event.getLevel().isClientSide()) return;
 
     ServerLevel level = (ServerLevel) event.getLevel();
@@ -261,9 +262,8 @@ public class TotemEventHandlers {
     }
   }
 
-
-  // Disable mob damage in zone
   private static void protectLivingEntity(LivingEvent event, UUID attackerUUID) {
+    if(Config.DISABLE_MOB_DAMAGING.get() == false) return;
     if (event.getEntity().level.isClientSide()) return;
 
     ServerLevel level = (ServerLevel) event.getEntity().getLevel();
@@ -284,7 +284,7 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void onLivingAttack(LivingAttackEvent event) {
     if (event.getSource().getEntity() instanceof Player attacker) {
-      if(event.getEntity() instanceof Monster) return;
+      if(event.getEntity() instanceof Monster || event.getEntity() instanceof Player) return;
       protectLivingEntity(event, attacker.getUUID());
     }
   }
@@ -292,13 +292,14 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void onLivingDamage(LivingDamageEvent event) {
     if (event.getSource().getEntity() instanceof Player attacker) {
-      if(event.getEntity() instanceof Monster) return;
+      if(event.getEntity() instanceof Monster || event.getEntity() instanceof Player) return;
       protectLivingEntity(event, attacker.getUUID());
     }
   }
 
   @SubscribeEvent
   public void onMobGrief(EntityMobGriefingEvent event) {
+    if(Config.DISABLE_MOB_GRIEF.get() == false) return;
     if(event.getEntity().getLevel().isClientSide()) return;
     Entity entity = event.getEntity();
 
@@ -313,9 +314,10 @@ public class TotemEventHandlers {
       }
     }
   }
-  //Prevent pick-up from non-owners
+
   @SubscribeEvent
   public static void onItemPickup(EntityItemPickupEvent event) {
+    if(Config.DISABLE_ITEM_PICKUP.get() == false) return;
     if (event.getEntity().level.isClientSide()) return;
 
     Player player = event.getEntity();
@@ -336,9 +338,9 @@ public class TotemEventHandlers {
     }
   }
 
-  // Prevent non-owners from dropping items in the totem zone
   @SubscribeEvent
   public static void onItemToss(ItemTossEvent event) {
+    if(Config.DISABLE_ITEM_TOSS.get() == false) return;
     if (event.getPlayer().level.isClientSide()) return;
 
     Player player = event.getPlayer();
@@ -359,7 +361,6 @@ public class TotemEventHandlers {
     }
   }
 
-  // Взрыв в зоне действия тотема
   @SubscribeEvent
   public static void explosion(ExplosionEvent.Detonate event) {
     if (Config.DISABLE_EXPLOSION_BLOCKS.get() == false) return;
@@ -370,12 +371,11 @@ public class TotemEventHandlers {
     explosionBlocks.removeIf(pos -> data.getNearestTotem(pos) != null);
   }
 
-  // Запрет входа игрока в зону тотема
   @SubscribeEvent
   public static void livingTick(TickEvent.PlayerTickEvent event) {
     if (event.player.getLevel().isClientSide()) return;
     if (event.phase != TickEvent.Phase.END) return;
-    if (!Config.ENABLE_PLAYER_RESTRICT.get()) return;
+    if (Config.ENABLE_PLAYER_RESTRICT.get() == false) return;
 
     Player player = event.player;
     ServerLevel level = (ServerLevel) player.getLevel();
@@ -404,7 +404,6 @@ public class TotemEventHandlers {
     }
   }
 
-  // Установка и удаление тотема
   @SubscribeEvent(priority = EventPriority.HIGHEST)
   public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
     if (event.getLevel().isClientSide()) return;
