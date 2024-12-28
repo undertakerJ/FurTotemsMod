@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:smithing",
+  "addition": {
+    "item": "minecraft:netherite_ingot"
+  },
+  "base": {
+    "item": "furtotemsmod:diamond_staff_item"
+  },
+  "result": {
+    "item": "furtotemsmod:netherite_staff_item"
+  }
+}

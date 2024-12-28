@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:smithing",
+  "addition": {
+    "item": "minecraft:diamond"
+  },
+  "base": {
+    "item": "furtotemsmod:gold_staff_item"
+  },
+  "result": {
+    "item": "furtotemsmod:diamond_staff_item"
+  }
+}

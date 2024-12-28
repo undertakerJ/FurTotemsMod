@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:smithing",
+  "addition": {
+    "item": "minecraft:iron_ingot"
+  },
+  "base": {
+    "item": "furtotemsmod:copper_staff_item"
+  },
+  "result": {
+    "item": "furtotemsmod:iron_staff_item"
+  }
+}
