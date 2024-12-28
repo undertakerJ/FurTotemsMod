@@ -141,6 +141,17 @@ public class TotemSavedData extends SavedData {
         return false;
     }
 
+    public boolean isPositionProtected(BlockPos pos, UUID playerUUID) {
+        BlockPos nearestTotem = getNearestTotem(pos);
+        if (nearestTotem == null) return false;
+
+        TotemData totemData = getTotemData(nearestTotem);
+        if (totemData == null) return false;
+
+        // Проверяем пересечение радиуса и принадлежность игроку
+        return nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)
+                && !totemData.getOwner().equals(playerUUID);
+    }
 
 
     public BlockPos getNearestTotem(BlockPos targetPos) {
