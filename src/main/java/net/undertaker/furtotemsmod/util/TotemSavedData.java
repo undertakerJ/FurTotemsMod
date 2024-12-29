@@ -8,10 +8,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.undertaker.furtotemsmod.FurTotemsMod;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class TotemSavedData extends SavedData {
@@ -22,11 +19,13 @@ public class TotemSavedData extends SavedData {
         private final UUID owner;
         private final int radius;
         private final String type;
+        private final Set<UUID> members;
 
         public TotemData(UUID owner, int radius, String type) {
             this.owner = owner;
             this.radius = radius;
             this.type = type;
+            this.members = new HashSet<>();
         }
 
         public UUID getOwner() {
@@ -40,6 +39,22 @@ public class TotemSavedData extends SavedData {
         public String getType() {
             return type;
         }
+        public Set<UUID> getMembers() {
+            return members;
+        }
+
+        public void addMember(UUID memberUUID) {
+            members.add(memberUUID);
+        }
+
+        public void removeMember(UUID memberUUID) {
+            members.remove(memberUUID);
+        }
+
+        public boolean isMember(UUID memberUUID) {
+            return owner.equals(memberUUID) || members.contains(memberUUID);
+        }
+
     }
 
     public static class TotemCount {
@@ -70,6 +85,27 @@ public class TotemSavedData extends SavedData {
             bigTotems = Math.max(0, bigTotems - 1);
         }
     }
+
+    public void addMemberToTotem(UUID ownerUUID, UUID memberUUID) {
+        totemDataMap.values().stream()
+                .filter(totem -> totem.getOwner().equals(ownerUUID))
+                .forEach(totem -> totem.addMember(memberUUID));
+        setDirty();
+    }
+
+    public void removeMemberFromTotem(UUID ownerUUID, UUID memberUUID) {
+        totemDataMap.values().stream()
+                .filter(totem -> totem.getOwner().equals(ownerUUID))
+                .forEach(totem -> totem.removeMember(memberUUID));
+        setDirty();
+    }
+
+    public boolean isPlayerMember(UUID ownerUUID, UUID playerUUID) {
+        return totemDataMap.values().stream()
+                .filter(totem -> totem.getOwner().equals(ownerUUID))
+                .anyMatch(totem -> totem.isMember(playerUUID));
+    }
+
 
     public TotemCount getPlayerTotemCount(UUID playerUUID) {
         return totemsPerPlayer.computeIfAbsent(playerUUID, uuid -> new TotemCount());

@@ -63,8 +63,9 @@ public class TotemEventHandlers {
       TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
 
       if (totemData != null
-          && !event.getPlayer().getUUID().equals(totemData.getOwner())
-          && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
+              && !totemData.isMember(event.getPlayer().getUUID())
+              && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
+
         event.setCanceled(true);
         event
             .getPlayer()
@@ -497,7 +498,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent(priority = EventPriority.HIGHEST)
   public static void onServerStarting(RegisterCommandsEvent event) {
-    RemoveTotemsCommand.register(event.getDispatcher());
+    FurTotemsCommands.register(event.getDispatcher());
   }
 
   @SubscribeEvent(priority = EventPriority.HIGHEST)
