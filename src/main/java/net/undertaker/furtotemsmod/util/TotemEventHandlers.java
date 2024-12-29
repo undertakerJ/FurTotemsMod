@@ -8,6 +8,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.decoration.HangingEntity;
@@ -63,8 +64,8 @@ public class TotemEventHandlers {
       TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
 
       if (totemData != null
-              && !totemData.isMember(event.getPlayer().getUUID())
-              && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
+          && !totemData.isMember(event.getPlayer().getUUID())
+          && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
 
         event.setCanceled(true);
         event
@@ -101,7 +102,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-    if(Config.DISABLE_BLOCK_INTERACTION.get() == false) return;
+    if (Config.DISABLE_BLOCK_INTERACTION.get() == false) return;
     if (event.getLevel().isClientSide()) return;
     ServerLevel level = (ServerLevel) event.getLevel();
     Player player = event.getEntity();
@@ -117,7 +118,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-    if(Config.DISABLE_ENTITY_INTERACTION.get() == false) return;
+    if (Config.DISABLE_ENTITY_INTERACTION.get() == false) return;
     if (event.getLevel().isClientSide()) return;
     ServerLevel level = (ServerLevel) event.getEntity().getLevel();
     Player player = event.getEntity();
@@ -133,7 +134,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onPistonExtend(PistonEvent.Pre event) {
-    if(Config.DISABLE_PISTON.get() == false) return;
+    if (Config.DISABLE_PISTON.get() == false) return;
     PistonStructureResolver resolver = event.getStructureHelper();
     if (resolver == null) return;
 
@@ -152,7 +153,8 @@ public class TotemEventHandlers {
       if (nearestTotem == null) continue;
 
       TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
-      if (totemData != null && nearestTotem.distSqr(targetPos) <= Math.pow(totemData.getRadius(), 2)) {
+      if (totemData != null
+          && nearestTotem.distSqr(targetPos) <= Math.pow(totemData.getRadius(), 2)) {
         event.setCanceled(true);
         return;
       }
@@ -163,7 +165,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
-    if(Config.DISABLE_FALLING_ENTITIES.get() == false) return;
+    if (Config.DISABLE_FALLING_ENTITIES.get() == false) return;
     if (event.getLevel().isClientSide) return;
     if (event.getEntity() instanceof FallingBlockEntity fallingBlock) {
       fallingBlocks.add(fallingBlock);
@@ -172,9 +174,9 @@ public class TotemEventHandlers {
 
   @SubscribeEvent(priority = EventPriority.LOW)
   public static void onWorldTick(TickEvent.LevelTickEvent event) {
-    if(Config.DISABLE_FALLING_ENTITIES.get() == false) return;
+    if (Config.DISABLE_FALLING_ENTITIES.get() == false) return;
     if (event.level.isClientSide || event.phase != TickEvent.Phase.END) return;
-    if(event.level.getServer().getTickCount() % 10 != 0) return;
+    if (event.level.getServer().getTickCount() % 10 != 0) return;
     ServerLevel level = (ServerLevel) event.level;
     TotemSavedData data = TotemSavedData.get(level);
 
@@ -192,7 +194,7 @@ public class TotemEventHandlers {
       if (nearestTotem != null) {
         TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
         if (totemData != null
-                && nearestTotem.distSqr(entityPos) <= Math.pow(totemData.getRadius(), 2)) {
+            && nearestTotem.distSqr(entityPos) <= Math.pow(totemData.getRadius(), 2)) {
           fallingBlock.discard();
           toRemove.add(fallingBlock);
         }
@@ -204,7 +206,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void mobSpawnEvent(EntityJoinLevelEvent event) {
-    if(Config.PREVENT_MOB_SPAWN.get() == false) return;
+    if (Config.PREVENT_MOB_SPAWN.get() == false) return;
     if (event.getLevel().isClientSide) return;
     if (!(event.getEntity() instanceof Monster monster)) return;
 
@@ -215,8 +217,7 @@ public class TotemEventHandlers {
 
     if (nearestTotem != null) {
       TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
-      if (totemData != null
-              && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
+      if (totemData != null && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
         event.setCanceled(true);
       }
     }
@@ -224,7 +225,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onHangingEntityAttack(AttackEntityEvent event) {
-    if(Config.BREAKING_HANGING_ENTITIES.get() == false) return;
+    if (Config.BREAKING_HANGING_ENTITIES.get() == false) return;
     if (event.getEntity().level.isClientSide()) return;
 
     if (event.getTarget() instanceof HangingEntity) {
@@ -243,7 +244,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onNeighborNotify(BlockEvent.NeighborNotifyEvent event) {
-    if(Config.DISABLE_FIRE_SPREAD.get() == false) return;
+    if (Config.DISABLE_FIRE_SPREAD.get() == false) return;
     if (event.getLevel().isClientSide()) return;
 
     ServerLevel level = (ServerLevel) event.getLevel();
@@ -264,7 +265,7 @@ public class TotemEventHandlers {
   }
 
   private static void protectLivingEntity(LivingEvent event, UUID attackerUUID) {
-    if(Config.DISABLE_MOB_DAMAGING.get() == false) return;
+    if (Config.DISABLE_MOB_DAMAGING.get() == false) return;
     if (event.getEntity().level.isClientSide()) return;
 
     ServerLevel level = (ServerLevel) event.getEntity().getLevel();
@@ -285,7 +286,7 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void onLivingAttack(LivingAttackEvent event) {
     if (event.getSource().getEntity() instanceof Player attacker) {
-      if(event.getEntity() instanceof Monster || event.getEntity() instanceof Player) return;
+      if (event.getEntity() instanceof Monster || event.getEntity() instanceof Player) return;
       protectLivingEntity(event, attacker.getUUID());
     }
   }
@@ -293,15 +294,15 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void onLivingDamage(LivingDamageEvent event) {
     if (event.getSource().getEntity() instanceof Player attacker) {
-      if(event.getEntity() instanceof Monster || event.getEntity() instanceof Player) return;
+      if (event.getEntity() instanceof Monster || event.getEntity() instanceof Player) return;
       protectLivingEntity(event, attacker.getUUID());
     }
   }
 
   @SubscribeEvent
   public void onMobGrief(EntityMobGriefingEvent event) {
-    if(Config.DISABLE_MOB_GRIEF.get() == false) return;
-    if(event.getEntity().getLevel().isClientSide()) return;
+    if (Config.DISABLE_MOB_GRIEF.get() == false) return;
+    if (event.getEntity().getLevel().isClientSide()) return;
     Entity entity = event.getEntity();
 
     if (entity instanceof WitherBoss || entity instanceof EnderMan || entity instanceof Creeper) {
@@ -318,7 +319,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onItemPickup(EntityItemPickupEvent event) {
-    if(Config.DISABLE_ITEM_PICKUP.get() == false) return;
+    if (Config.DISABLE_ITEM_PICKUP.get() == false) return;
     if (event.getEntity().level.isClientSide()) return;
 
     Player player = event.getEntity();
@@ -331,8 +332,8 @@ public class TotemEventHandlers {
     if (nearestTotem != null) {
       TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
       if (totemData != null
-              && nearestTotem.distSqr(itemPos) <= Math.pow(totemData.getRadius(), 2)
-              && !player.getUUID().equals(totemData.getOwner())) {
+          && nearestTotem.distSqr(itemPos) <= Math.pow(totemData.getRadius(), 2)
+          && !player.getUUID().equals(totemData.getOwner())) {
         event.setCanceled(true);
         player.displayClientMessage(Component.literal("Этот предмет защищён тотемом!"), true);
       }
@@ -341,7 +342,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onItemToss(ItemTossEvent event) {
-    if(Config.DISABLE_ITEM_TOSS.get() == false) return;
+    if (Config.DISABLE_ITEM_TOSS.get() == false) return;
     if (event.getPlayer().level.isClientSide()) return;
 
     Player player = event.getPlayer();
@@ -354,10 +355,11 @@ public class TotemEventHandlers {
     if (nearestTotem != null) {
       TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
       if (totemData != null
-              && nearestTotem.distSqr(dropPos) <= Math.pow(totemData.getRadius(), 2)
-              && !player.getUUID().equals(totemData.getOwner())) {
+          && nearestTotem.distSqr(dropPos) <= Math.pow(totemData.getRadius(), 2)
+          && !player.getUUID().equals(totemData.getOwner())) {
         event.setCanceled(true);
-        player.displayClientMessage(Component.literal("Нельзя выбрасывать предметы в зоне тотема!"), true);
+        player.displayClientMessage(
+            Component.literal("Нельзя выбрасывать предметы в зоне тотема!"), true);
       }
     }
   }
@@ -459,9 +461,60 @@ public class TotemEventHandlers {
           data.addTotem(pos, player.getUUID(), totemEntity.getRadius(), "Upgradable");
         }
       }
-    } else {
+    } else if (isCorrectBlock(placedBlock.getBlock().defaultBlockState())) {
       PlacedBlockManager.addBlock((Level) event.getLevel(), pos);
     }
+  }
+
+  private static boolean isCorrectBlock(BlockState state) {
+    return !state.is(BlockTags.FIRE)
+        && !state.is(Blocks.BEEHIVE)
+        && !state.is(Blocks.BEE_NEST)
+        && !state.is(Blocks.COMMAND_BLOCK)
+        && !state.is(Blocks.CHAIN_COMMAND_BLOCK)
+        && !state.is(Blocks.REPEATING_COMMAND_BLOCK)
+        && !state.is(Blocks.STRUCTURE_BLOCK)
+        && !state.is(Blocks.JIGSAW)
+        && !state.is(Blocks.SPAWNER)
+        && !state.is(BlockTags.SAPLINGS)
+        && !state.is(Blocks.BEDROCK)
+        && !state.is(Blocks.END_PORTAL_FRAME)
+        && !state.is(Blocks.END_GATEWAY)
+        && !state.is(Blocks.BARRIER)
+        && !state.is(BlockTags.FLOWERS)
+        && !state.is(Blocks.TORCH)
+        && !state.is(Blocks.SOUL_TORCH)
+        && !state.is(Blocks.WALL_TORCH)
+        && !state.is(Blocks.LANTERN)
+        && !state.is(Blocks.SOUL_WALL_TORCH)
+        && !state.is(Blocks.GRASS_BLOCK)
+        && !state.is(Blocks.TALL_GRASS)
+        && !state.is(Blocks.WATER)
+        && !state.is(Blocks.LAVA)
+        && !state.is(Blocks.FARMLAND)
+        && !state.is(BlockTags.CORAL_PLANTS)
+        && !state.is(Blocks.FERN)
+        && !state.is(Blocks.LARGE_FERN)
+        && !state.is(Blocks.VINE)
+        && !state.is(Blocks.DEAD_BUSH)
+        && !state.is(Blocks.CACTUS)
+        && !state.is(Blocks.SUGAR_CANE)
+        && !state.is(Blocks.BAMBOO)
+        && !state.is(Blocks.WHEAT)
+        && !state.is(Blocks.CARROTS)
+        && !state.is(Blocks.POTATOES)
+        && !state.is(Blocks.BEETROOTS)
+        && !state.is(Blocks.MELON_STEM)
+        && !state.is(Blocks.PUMPKIN_STEM)
+        && !state.is(Blocks.SWEET_BERRY_BUSH)
+        && !state.is(Blocks.CAVE_VINES_PLANT)
+        && !state.is(Blocks.CAVE_VINES)
+        && !state.is(Blocks.KELP)
+        && !state.is(Blocks.SEAGRASS)
+        && !state.is(Blocks.TALL_SEAGRASS)
+        && !state.is(Blocks.MUSHROOM_STEM)
+        && !state.is(Blocks.BROWN_MUSHROOM)
+        && !state.is(Blocks.RED_MUSHROOM);
   }
 
   @SubscribeEvent(priority = EventPriority.HIGHEST)
