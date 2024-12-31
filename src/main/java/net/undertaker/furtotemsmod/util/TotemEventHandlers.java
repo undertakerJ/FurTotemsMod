@@ -378,7 +378,7 @@ public class TotemEventHandlers {
   public static void livingTick(TickEvent.PlayerTickEvent event) {
     if (event.player.getLevel().isClientSide()) return;
     if (event.phase != TickEvent.Phase.END) return;
-    if (Config.ENABLE_PLAYER_RESTRICT.get() == false) return;
+    if (!Config.ENABLE_PLAYER_RESTRICT.get()) return;
 
     Player player = event.player;
     ServerLevel level = (ServerLevel) player.getLevel();
@@ -388,23 +388,30 @@ public class TotemEventHandlers {
     BlockPos nearestTotem = data.getNearestTotem(playerPos);
 
     if (nearestTotem != null) {
-      TotemSavedData.TotemData totemData = data.getTotemDataMap().get(nearestTotem);
+      TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
+      if (totemData == null) return;
 
       double radius = totemData.getRadius();
-      if (player.getUUID().equals(totemData.getOwner())) return;
-      if (nearestTotem.distSqr(playerPos) <= radius * radius) {
-        double angle =
-            Math.atan2(
-                playerPos.getZ() - nearestTotem.getZ(), playerPos.getX() - nearestTotem.getX());
-        double safeX = nearestTotem.getX() + (radius + 1) * Math.cos(angle);
-        double safeZ = nearestTotem.getZ() + (radius + 1) * Math.sin(angle);
-        BlockPos safePos = new BlockPos(safeX, playerPos.getY(), safeZ);
 
-        player.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
-        player.displayClientMessage(
-            Component.literal("Вы не можете находиться в зоне действия тотема!"), true);
+
+      if (player.getUUID().equals(totemData.getOwner()) || totemData.isMember(player.getUUID())) return;
+
+
+      if (totemData.isBlacklisted(player.getUUID())) {
+        teleportPlayerOutOfRadius(player, nearestTotem, radius);
+        player.displayClientMessage(Component.literal("Вы находитесь в чёрном списке!"), true);
       }
     }
+  }
+
+  private static void teleportPlayerOutOfRadius(Player player, BlockPos totemPos, double radius) {
+    BlockPos playerPos = player.blockPosition();
+    double angle = Math.atan2(playerPos.getZ() - totemPos.getZ(), playerPos.getX() - totemPos.getX());
+    double safeX = totemPos.getX() + (radius + 1) * Math.cos(angle);
+    double safeZ = totemPos.getZ() + (radius + 1) * Math.sin(angle);
+    BlockPos safePos = new BlockPos(safeX, playerPos.getY(), safeZ);
+
+    player.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
   }
 
   @SubscribeEvent(priority = EventPriority.HIGHEST)

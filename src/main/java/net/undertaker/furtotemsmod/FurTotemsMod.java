@@ -15,6 +15,7 @@ import net.undertaker.furtotemsmod.attributes.ModAttributes;
 import net.undertaker.furtotemsmod.blocks.ModBlockEntities;
 import net.undertaker.furtotemsmod.blocks.ModBlocks;
 import net.undertaker.furtotemsmod.items.ModItems;
+import net.undertaker.furtotemsmod.networking.ModNetworking;
 import org.slf4j.Logger;
 
 @Mod(FurTotemsMod.MOD_ID)
@@ -37,7 +38,10 @@ public class FurTotemsMod {
         ModConfig.Type.SERVER, Config.SERVER_CONFIG, "furtotemsmod-config-server.toml");
   }
   public static final Logger LOGGER = LogUtils.getLogger();
-  private void commonSetup(final FMLCommonSetupEvent event) {}
+  private void commonSetup(final FMLCommonSetupEvent event) {
+
+    ModNetworking.register();
+  }
 
   @SubscribeEvent
   public void onServerStarting(ServerStartingEvent event) {}

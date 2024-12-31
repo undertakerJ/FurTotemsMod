@@ -9,7 +9,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.undertaker.furtotemsmod.FurTotemsMod;
 import net.undertaker.furtotemsmod.blocks.ModBlocks;
-import net.undertaker.furtotemsmod.items.custom.TotemStaffItem;
+import net.undertaker.furtotemsmod.items.custom.TotemItem;
 
 public class ModItems {
   public static final DeferredRegister<Item> ITEMS =
@@ -33,23 +33,23 @@ public class ModItems {
   public static final RegistryObject<Item> COPPER_STAFF_ITEM =
       ITEMS.register(
           "copper_staff_item",
-          () -> new TotemStaffItem(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
+          () -> new TotemItem(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
   public static final RegistryObject<Item> IRON_STAFF_ITEM =
       ITEMS.register(
           "iron_staff_item",
-          () -> new TotemStaffItem(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
+          () -> new TotemItem(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
   public static final RegistryObject<Item> GOLD_STAFF_ITEM =
       ITEMS.register(
           "gold_staff_item",
-          () -> new TotemStaffItem(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
+          () -> new TotemItem(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
   public static final RegistryObject<Item> DIAMOND_STAFF_ITEM =
       ITEMS.register(
           "diamond_staff_item",
-          () -> new TotemStaffItem(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
+          () -> new TotemItem(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
   public static final RegistryObject<Item> NETHERITE_STAFF_ITEM =
       ITEMS.register(
           "netherite_staff_item",
-          () -> new TotemStaffItem(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
+          () -> new TotemItem(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
 
   public static void register(IEventBus eventBus) {
     ITEMS.register(eventBus);

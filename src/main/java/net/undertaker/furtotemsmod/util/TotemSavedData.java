@@ -55,6 +55,26 @@ public class TotemSavedData extends SavedData {
             return owner.equals(memberUUID) || members.contains(memberUUID);
         }
 
+        private final List<UUID> blacklistedPlayers = new ArrayList<>();
+
+        public boolean isBlacklisted(UUID playerUUID) {
+            return blacklistedPlayers.contains(playerUUID);
+        }
+
+        public void addToBlacklist(UUID playerUUID) {
+            if (!blacklistedPlayers.contains(playerUUID)) {
+                blacklistedPlayers.add(playerUUID);
+            }
+        }
+
+        public void removeFromBlacklist(UUID playerUUID) {
+            blacklistedPlayers.remove(playerUUID);
+        }
+
+        public List<UUID> getBlacklistedPlayers() {
+            return Collections.unmodifiableList(blacklistedPlayers);
+        }
+
     }
 
     public static class TotemCount {
@@ -84,6 +104,26 @@ public class TotemSavedData extends SavedData {
         public void decrementBigTotems() {
             bigTotems = Math.max(0, bigTotems - 1);
         }
+    }
+
+    public void addToBlacklist(UUID ownerUUID, UUID playerUUID) {
+        totemDataMap.values().stream()
+                .filter(totem -> totem.getOwner().equals(ownerUUID))
+                .forEach(totem -> totem.addToBlacklist(playerUUID));
+        setDirty();
+    }
+
+    public void removeFromBlacklist(UUID ownerUUID, UUID playerUUID) {
+        totemDataMap.values().stream()
+                .filter(totem -> totem.getOwner().equals(ownerUUID))
+                .forEach(totem -> totem.removeFromBlacklist(playerUUID));
+        setDirty();
+    }
+
+    public boolean isBlacklisted(UUID ownerUUID, UUID playerUUID) {
+        return totemDataMap.values().stream()
+                .filter(totem -> totem.getOwner().equals(ownerUUID))
+                .anyMatch(totem -> totem.isBlacklisted(playerUUID));
     }
 
     public void addMemberToTotem(UUID ownerUUID, UUID memberUUID) {
