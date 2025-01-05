@@ -38,9 +38,11 @@ public class Config {
 
   public static final ForgeConfigSpec.IntValue BLOCK_BREAK_DELAY;
 
+
   static {
     ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
     builder.push("events");
+
     ENABLE_BLOCK_BREAK_EVENT =
         builder
             .comment("Enable block breaking protection near totems(default - true)")
@@ -139,7 +141,6 @@ public class Config {
             .comment(
                 "Time in seconds, after blocks in no-zone will be destroyed(default - 5, min - 1, max - 300)")
             .defineInRange("blockBreakDelay", 5, 1, 300);
-
     builder.pop();
 
     SERVER_CONFIG = builder.build();

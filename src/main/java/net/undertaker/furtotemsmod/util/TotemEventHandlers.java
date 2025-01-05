@@ -1,15 +1,14 @@
 package net.undertaker.furtotemsmod.util;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.entity.item.FallingBlockEntity;
@@ -17,7 +16,6 @@ import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.piston.PistonStructureResolver;
 import net.minecraft.world.level.block.state.BlockState;
@@ -29,8 +27,10 @@ import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.living.LivingSpawnEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.level.ExplosionEvent;
@@ -46,6 +46,9 @@ import net.undertaker.furtotemsmod.attributes.ModAttributes;
 import net.undertaker.furtotemsmod.blocks.blockentity.UpgradableTotemBlockEntity;
 import net.undertaker.furtotemsmod.blocks.custom.SmallTotemBlock;
 import net.undertaker.furtotemsmod.blocks.custom.UpgradableTotemBlock;
+import net.undertaker.furtotemsmod.data.TotemSavedData;
+import net.undertaker.furtotemsmod.networking.ModNetworking;
+import net.undertaker.furtotemsmod.networking.packets.SyncTotemsPacket;
 
 @Mod.EventBusSubscriber(modid = FurTotemsMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class TotemEventHandlers {
@@ -70,7 +73,7 @@ public class TotemEventHandlers {
         event.setCanceled(true);
         event
             .getPlayer()
-            .displayClientMessage(Component.literal("Этот блок защищён тотемом!"), true);
+            .displayClientMessage(Component.translatable("message.furtotemsmod.block_protected_by_totem"), true);
       }
     }
   }
@@ -90,11 +93,11 @@ public class TotemEventHandlers {
 
       if (totemData != null
           && !(event.getEntity() instanceof Player player
-              && player.getUUID().equals(totemData.getOwner()))
+              &&  totemData.isMember(player.getUUID()))
           && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
         event.setCanceled(true);
         if (event.getEntity() instanceof Player player) {
-          player.displayClientMessage(Component.literal("Этот блок защищён тотемом!"), true);
+          player.displayClientMessage(Component.translatable("message.furtotemsmod.block_protected_by_totem"), true);
         }
       }
     }
@@ -112,7 +115,7 @@ public class TotemEventHandlers {
 
     if (data.isPositionProtected(pos, player.getUUID())) {
       event.setCanceled(true);
-      player.displayClientMessage(Component.literal("Этот блок защищён тотемом!"), true);
+      player.displayClientMessage(Component.translatable("message.furtotemsmod.block_protected_by_totem"), true);
     }
   }
 
@@ -128,7 +131,7 @@ public class TotemEventHandlers {
 
     if (data.isPositionProtected(pos, player.getUUID())) {
       event.setCanceled(true);
-      player.displayClientMessage(Component.literal("Этот энтити защищён тотемом!"), true);
+      player.displayClientMessage(Component.translatable("message.furtotemsmod.entity_protected_by_totem"), true);
     }
   }
 
@@ -205,10 +208,11 @@ public class TotemEventHandlers {
   }
 
   @SubscribeEvent
-  public static void mobSpawnEvent(EntityJoinLevelEvent event) {
+  public static void mobSpawnEvent(LivingSpawnEvent.CheckSpawn event) {
     if (Config.PREVENT_MOB_SPAWN.get() == false) return;
-    if (event.getLevel().isClientSide) return;
+    if (event.getLevel().isClientSide()) return;
     if (!(event.getEntity() instanceof Monster monster)) return;
+    if(event.getSpawnReason() == MobSpawnType.SPAWNER) return;
 
     ServerLevel level = (ServerLevel) event.getLevel();
     BlockPos pos = monster.blockPosition();
@@ -237,7 +241,7 @@ public class TotemEventHandlers {
 
       if (data.isPositionProtected(pos, player.getUUID())) {
         event.setCanceled(true);
-        player.displayClientMessage(Component.literal("Этот энтити защищён тотемом!"), true);
+        player.displayClientMessage(Component.translatable("message.furtotemsmod.entity_protected_by_totem"), true);
       }
     }
   }
@@ -258,16 +262,15 @@ public class TotemEventHandlers {
         TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
         if (totemData != null && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
           level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
-          System.out.println("Fire removed within totem radius: " + pos);
         }
       }
     }
   }
 
-  private static void protectLivingEntity(LivingEvent event, UUID attackerUUID) {
-    if (Config.DISABLE_MOB_DAMAGING.get() == false) return;
+  private static void disablePvP(LivingEvent event, UUID attackerUUID){
+    if(!Config.DISABLE_PLAYER_PVP.get()) return;
     if (event.getEntity().level.isClientSide()) return;
-
+    if(!(event.getEntity() instanceof Player)) return;
     ServerLevel level = (ServerLevel) event.getEntity().getLevel();
     BlockPos pos = event.getEntity().blockPosition();
     TotemSavedData data = TotemSavedData.get(level);
@@ -277,7 +280,27 @@ public class TotemEventHandlers {
       if (attackerUUID != null) {
         Player attacker = level.getPlayerByUUID(attackerUUID);
         if (attacker != null) {
-          attacker.displayClientMessage(Component.literal("Этот энтити защищён тотемом!"), true);
+          attacker.displayClientMessage(Component.translatable("message.furtotemsmod.player_protected_by_totem"), true);
+        }
+      }
+    }
+  }
+
+
+  private static void protectLivingEntity(LivingEvent event, UUID attackerUUID) {
+    if (Config.DISABLE_MOB_DAMAGING.get() == false) return;
+    if (event.getEntity().level.isClientSide()) return;
+    if(event.getEntity() instanceof Player) return;
+    ServerLevel level = (ServerLevel) event.getEntity().getLevel();
+    BlockPos pos = event.getEntity().blockPosition();
+    TotemSavedData data = TotemSavedData.get(level);
+
+    if (data.isPositionProtected(pos, attackerUUID)) {
+      event.setCanceled(true);
+      if (attackerUUID != null) {
+        Player attacker = level.getPlayerByUUID(attackerUUID);
+        if (attacker != null) {
+          attacker.displayClientMessage(Component.translatable("message.furtotemsmod.entity_protected_by_totem"), true);
         }
       }
     }
@@ -286,16 +309,19 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void onLivingAttack(LivingAttackEvent event) {
     if (event.getSource().getEntity() instanceof Player attacker) {
-      if (event.getEntity() instanceof Monster || event.getEntity() instanceof Player) return;
+
+      if (event.getEntity() instanceof Monster) return;
       protectLivingEntity(event, attacker.getUUID());
+      disablePvP(event, attacker.getUUID());
     }
   }
 
   @SubscribeEvent
   public static void onLivingDamage(LivingDamageEvent event) {
     if (event.getSource().getEntity() instanceof Player attacker) {
-      if (event.getEntity() instanceof Monster || event.getEntity() instanceof Player) return;
+      if (event.getEntity() instanceof Monster) return;
       protectLivingEntity(event, attacker.getUUID());
+      disablePvP(event, attacker.getUUID());
     }
   }
 
@@ -335,7 +361,7 @@ public class TotemEventHandlers {
           && nearestTotem.distSqr(itemPos) <= Math.pow(totemData.getRadius(), 2)
           && !player.getUUID().equals(totemData.getOwner())) {
         event.setCanceled(true);
-        player.displayClientMessage(Component.literal("Этот предмет защищён тотемом!"), true);
+        player.displayClientMessage(Component.translatable("message.furtotemsmod.item_protected_by_totem"), true);
       }
     }
   }
@@ -359,7 +385,7 @@ public class TotemEventHandlers {
           && !player.getUUID().equals(totemData.getOwner())) {
         event.setCanceled(true);
         player.displayClientMessage(
-            Component.literal("Нельзя выбрасывать предметы в зоне тотема!"), true);
+            Component.translatable("message.furtotemsmod.cannot_throw_item_in_totem_zone"), true);
       }
     }
   }
@@ -393,25 +419,109 @@ public class TotemEventHandlers {
 
       double radius = totemData.getRadius();
 
-
-      if (player.getUUID().equals(totemData.getOwner()) || totemData.isMember(player.getUUID())) return;
-
+      if (player.getUUID().equals(totemData.getOwner()) || totemData.isMember(player.getUUID()))
+        return;
 
       if (totemData.isBlacklisted(player.getUUID())) {
         teleportPlayerOutOfRadius(player, nearestTotem, radius);
-        player.displayClientMessage(Component.literal("Вы находитесь в чёрном списке!"), true);
+        player.displayClientMessage(Component.translatable("message.furtotemsmod.in_blacklist"), true);
       }
     }
   }
 
   private static void teleportPlayerOutOfRadius(Player player, BlockPos totemPos, double radius) {
     BlockPos playerPos = player.blockPosition();
-    double angle = Math.atan2(playerPos.getZ() - totemPos.getZ(), playerPos.getX() - totemPos.getX());
+    double angle =
+        Math.atan2(playerPos.getZ() - totemPos.getZ(), playerPos.getX() - totemPos.getX());
     double safeX = totemPos.getX() + (radius + 1) * Math.cos(angle);
     double safeZ = totemPos.getZ() + (radius + 1) * Math.sin(angle);
     BlockPos safePos = new BlockPos(safeX, playerPos.getY(), safeZ);
 
     player.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
+  }
+
+  @SubscribeEvent
+  public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+    if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) return;
+    if(player.level.getServer() == null) return;
+    if (player.level.getServer().getTickCount() % 20 != 0) return;
+    ServerLevel serverLevel = player.getLevel();
+    TotemSavedData data = TotemSavedData.get(serverLevel);
+    ModNetworking.sendToPlayer(new SyncTotemsPacket(data.getTotemDataMap()), player);
+  }
+
+  @SubscribeEvent
+  public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
+    if (event.getEntity() instanceof ServerPlayer player) {
+      ServerLevel serverLevel = player.getLevel();
+      if(serverLevel.getServer() == null || serverLevel == null) return;
+      TotemSavedData data = TotemSavedData.get(serverLevel);
+      ModNetworking.sendToPlayer(new SyncTotemsPacket(data.getTotemDataMap()), player);
+    }
+  }
+
+  private static final Map<UUID, Map<String, Set<BlockPos>>> playerTotemState = new HashMap<>();
+
+  @SubscribeEvent
+  public static void onPlayerTick1(TickEvent.PlayerTickEvent event) {
+    if (event.phase != TickEvent.Phase.END || event.player.level.isClientSide) return;
+
+    Player player = event.player;
+    ServerLevel level = (ServerLevel) player.getLevel();
+    TotemSavedData data = TotemSavedData.get(level);
+
+    Map<String, Set<BlockPos>> currentZonesByOwner = groupZonesByOwner(
+            data.getTotemsInRadius(player.blockPosition(), player.getUUID()), data, level);
+
+    Map<String, Set<BlockPos>> previousZonesByOwner = playerTotemState.getOrDefault(player.getUUID(), new HashMap<>());
+
+    for (Map.Entry<String, Set<BlockPos>> entry : currentZonesByOwner.entrySet()) {
+      String owner = entry.getKey();
+      Set<BlockPos> currentPositions = entry.getValue();
+      Set<BlockPos> previousPositions = previousZonesByOwner.getOrDefault(owner, new HashSet<>());
+
+      Set<BlockPos> enteredPositions = new HashSet<>(currentPositions);
+      enteredPositions.removeAll(previousPositions);
+
+      if (!enteredPositions.isEmpty() && !isInAnyZoneOfOwner(previousZonesByOwner, owner)) {
+        player.displayClientMessage(
+                Component.literal(Component.translatable("message.furtotemsmod.enter_protection")
+                        .getString() + owner).withStyle(ChatFormatting.GREEN), true);
+      }
+    }
+
+    for (Map.Entry<String, Set<BlockPos>> entry : previousZonesByOwner.entrySet()) {
+      String owner = entry.getKey();
+      Set<BlockPos> previousPositions = entry.getValue();
+      Set<BlockPos> currentPositions = currentZonesByOwner.getOrDefault(owner, new HashSet<>());
+
+      Set<BlockPos> exitedPositions = new HashSet<>(previousPositions);
+      exitedPositions.removeAll(currentPositions);
+
+      if (!exitedPositions.isEmpty() && !isInAnyZoneOfOwner(currentZonesByOwner, owner)) {
+        player.displayClientMessage(
+                Component.literal(Component.translatable("message.furtotemsmod.leave_protection")
+                        .getString() + owner).withStyle(ChatFormatting.YELLOW), true);
+      }
+    }
+
+    playerTotemState.put(player.getUUID(), currentZonesByOwner);
+  }
+
+  private static Map<String, Set<BlockPos>> groupZonesByOwner(Set<BlockPos> positions, TotemSavedData data, ServerLevel level) {
+    Map<String, Set<BlockPos>> zonesByOwner = new HashMap<>();
+    for (BlockPos pos : positions) {
+      TotemSavedData.TotemData totemData = data.getTotemData(pos);
+      String owner = totemData != null ? totemData.getOwnerName(level) : "None";
+      zonesByOwner.computeIfAbsent(owner, k -> new HashSet<>()).add(pos);
+    }
+    return zonesByOwner;
+  }
+
+
+  private static boolean isInAnyZoneOfOwner(Map<String, Set<BlockPos>> zonesByOwner, String owner) {
+    Set<BlockPos> ownerZones = zonesByOwner.getOrDefault(owner, new HashSet<>());
+    return !ownerZones.isEmpty();
   }
 
   @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -436,93 +546,43 @@ public class TotemEventHandlers {
       } else if (placedBlock.getBlock() instanceof UpgradableTotemBlock) {
         radius = UpgradableTotemBlockEntity.MaterialType.COPPER.getRadius();
       }
-
       if (data.isOverlapping(pos, radius, player.getUUID())) {
         event.setCanceled(true);
         player.displayClientMessage(
-            Component.literal("Этот тотем пересекается с другой зоной!"), true);
+                Component.translatable("message.furtotemsmod.totem_overlaps_another_zone"), true);
         return;
       }
 
+
       if (placedBlock.getBlock() instanceof SmallTotemBlock) {
         int currentSmallTotems = data.getPlayerTotemCount(player.getUUID()).getSmallTotems();
-        if (currentSmallTotems >= maxSmallTotems) {
+        if (currentSmallTotems > maxSmallTotems) {
           event.setCanceled(true);
           player.displayClientMessage(
-              Component.literal("Вы достигли лимита маленьких тотемов!"), true);
+              Component.translatable("message.furtotemsmod.too_many_small_totems"), true);
           return;
         }
         data.addTotem(pos, player.getUUID(), radius, "Small");
-      } else if (placedBlock.getBlock() instanceof UpgradableTotemBlock) {
+      }
+      else if (placedBlock.getBlock() instanceof UpgradableTotemBlock) {
         int currentBigTotems = data.getPlayerTotemCount(player.getUUID()).getBigTotems();
-        if (currentBigTotems >= maxBigTotems) {
+        if (currentBigTotems > maxBigTotems) {
           event.setCanceled(true);
           player.displayClientMessage(
-              Component.literal("Вы достигли лимита больших тотемов!"), true);
+              Component.translatable("message.furtotemsmod.too_many_large_totems"), true);
           return;
         }
 
         UpgradableTotemBlockEntity totemEntity =
             (UpgradableTotemBlockEntity) serverLevel.getBlockEntity(pos);
         if (totemEntity != null) {
-          data.addTotem(pos, player.getUUID(), totemEntity.getRadius(), "Upgradable");
+         // data.addTotem(pos, player.getUUID(), totemEntity.getRadius(), "Upgradable");
         }
       }
-    } else if (isCorrectBlock(placedBlock.getBlock().defaultBlockState())) {
-      PlacedBlockManager.addBlock((Level) event.getLevel(), pos);
     }
   }
 
-  private static boolean isCorrectBlock(BlockState state) {
-    return !state.is(BlockTags.FIRE)
-        && !state.is(Blocks.BEEHIVE)
-        && !state.is(Blocks.BEE_NEST)
-        && !state.is(Blocks.COMMAND_BLOCK)
-        && !state.is(Blocks.CHAIN_COMMAND_BLOCK)
-        && !state.is(Blocks.REPEATING_COMMAND_BLOCK)
-        && !state.is(Blocks.STRUCTURE_BLOCK)
-        && !state.is(Blocks.JIGSAW)
-        && !state.is(Blocks.SPAWNER)
-        && !state.is(BlockTags.SAPLINGS)
-        && !state.is(Blocks.BEDROCK)
-        && !state.is(Blocks.END_PORTAL_FRAME)
-        && !state.is(Blocks.END_GATEWAY)
-        && !state.is(Blocks.BARRIER)
-        && !state.is(BlockTags.FLOWERS)
-        && !state.is(Blocks.TORCH)
-        && !state.is(Blocks.SOUL_TORCH)
-        && !state.is(Blocks.WALL_TORCH)
-        && !state.is(Blocks.LANTERN)
-        && !state.is(Blocks.SOUL_WALL_TORCH)
-        && !state.is(Blocks.GRASS_BLOCK)
-        && !state.is(Blocks.TALL_GRASS)
-        && !state.is(Blocks.WATER)
-        && !state.is(Blocks.LAVA)
-        && !state.is(Blocks.FARMLAND)
-        && !state.is(BlockTags.CORAL_PLANTS)
-        && !state.is(Blocks.FERN)
-        && !state.is(Blocks.LARGE_FERN)
-        && !state.is(Blocks.VINE)
-        && !state.is(Blocks.DEAD_BUSH)
-        && !state.is(Blocks.CACTUS)
-        && !state.is(Blocks.SUGAR_CANE)
-        && !state.is(Blocks.BAMBOO)
-        && !state.is(Blocks.WHEAT)
-        && !state.is(Blocks.CARROTS)
-        && !state.is(Blocks.POTATOES)
-        && !state.is(Blocks.BEETROOTS)
-        && !state.is(Blocks.MELON_STEM)
-        && !state.is(Blocks.PUMPKIN_STEM)
-        && !state.is(Blocks.SWEET_BERRY_BUSH)
-        && !state.is(Blocks.CAVE_VINES_PLANT)
-        && !state.is(Blocks.CAVE_VINES)
-        && !state.is(Blocks.KELP)
-        && !state.is(Blocks.SEAGRASS)
-        && !state.is(Blocks.TALL_SEAGRASS)
-        && !state.is(Blocks.MUSHROOM_STEM)
-        && !state.is(Blocks.BROWN_MUSHROOM)
-        && !state.is(Blocks.RED_MUSHROOM);
-  }
+
 
   @SubscribeEvent(priority = EventPriority.HIGHEST)
   public static void onBlockDestroy(BlockEvent.BreakEvent event) {
@@ -530,27 +590,27 @@ public class TotemEventHandlers {
 
     ServerLevel serverLevel = (ServerLevel) event.getLevel();
     TotemSavedData data = TotemSavedData.get(serverLevel);
-
     BlockPos pos = event.getPos();
     BlockState state = event.getState();
 
-    if (state.getBlock() instanceof SmallTotemBlock
-        || state.getBlock() instanceof UpgradableTotemBlock) {
+    if (state.getBlock() instanceof SmallTotemBlock || state.getBlock() instanceof UpgradableTotemBlock) {
       TotemSavedData.TotemData totemData = data.getTotemData(pos);
+
       if (totemData != null) {
         UUID owner = totemData.getOwner();
-
-        if ("Small".equals(totemData.getType())) {
-          data.getPlayerTotemCount(owner).decrementSmallTotems();
-        } else if ("Upgradable".equals(totemData.getType())) {
-          data.getPlayerTotemCount(owner).decrementBigTotems();
-        }
-
-        data.removeTotem(pos);
-
         ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(owner);
+
+
+        if (!event.getPlayer().getUUID().equals(owner)) {
+          event.setCanceled(true);
+          event.getPlayer().displayClientMessage(
+                  Component.translatable("message.furtotemsmod.cannot_destroy_totem"), true
+          );
+          return;
+        }
+        data.removeTotem(pos);
         if (player != null) {
-          player.displayClientMessage(Component.literal("Ваш тотем был уничтожен!"), true);
+          player.displayClientMessage(Component.translatable("message.furtotemsmod.totem_destroyed"), true);
         }
       }
     }
@@ -564,6 +624,7 @@ public class TotemEventHandlers {
   @SubscribeEvent(priority = EventPriority.HIGHEST)
   public static void worldLoad(LevelEvent.Load event) {
     if (event.getLevel() instanceof ServerLevel serverLevel) {
+      ServerLevelAccessor.setServerLevel(serverLevel);
       TotemSavedData data = TotemSavedData.get(serverLevel);
       data.getTotemDataMap()
           .forEach(

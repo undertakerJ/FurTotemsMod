@@ -1,7 +1,7 @@
 {
   "type": "minecraft:smithing",
   "addition": {
-    "item": "minecraft:netherite_ingot"
+    "item": "furtotemsmod:netherite_totemic_empowerment"
   },
   "base": {
     "item": "furtotemsmod:diamond_staff_item"

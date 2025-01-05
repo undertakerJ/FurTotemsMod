@@ -51,6 +51,26 @@ public class ModItems {
           "netherite_staff_item",
           () -> new TotemItem(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
 
+  public static final RegistryObject<Item> IRON_TOTEMIC_EMPOWERMENT =
+      ITEMS.register(
+          "iron_totemic_empowerment",
+          () -> new Item(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
+
+  public static final RegistryObject<Item> GOLD_TOTEMIC_EMPOWERMENT =
+      ITEMS.register(
+          "gold_totemic_empowerment",
+          () -> new Item(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
+
+  public static final RegistryObject<Item> DIAMOND_TOTEMIC_EMPOWERMENT =
+      ITEMS.register(
+          "diamond_totemic_empowerment",
+          () -> new Item(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
+
+  public static final RegistryObject<Item> NETHERITE_TOTEMIC_EMPOWERMENT =
+      ITEMS.register(
+          "netherite_totemic_empowerment",
+          () -> new Item(new Item.Properties().tab(CreativeModeTab.TAB_MISC).stacksTo(1)));
+
   public static void register(IEventBus eventBus) {
     ITEMS.register(eventBus);
   }

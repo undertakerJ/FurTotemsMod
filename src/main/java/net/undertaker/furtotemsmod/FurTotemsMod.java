@@ -1,13 +1,11 @@
 package net.undertaker.furtotemsmod;
 
 import com.mojang.logging.LogUtils;
-import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -22,7 +20,8 @@ import org.slf4j.Logger;
 public class FurTotemsMod {
   public static final String MOD_ID = "furtotemsmod";
 
-  public FurTotemsMod(FMLJavaModLoadingContext context) {
+  public FurTotemsMod() {
+    FMLJavaModLoadingContext context = FMLJavaModLoadingContext.get();
     IEventBus modEventBus = context.getModEventBus();
 
     modEventBus.addListener(this::commonSetup);
@@ -46,9 +45,4 @@ public class FurTotemsMod {
   @SubscribeEvent
   public void onServerStarting(ServerStartingEvent event) {}
 
-  @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-  public static class ClientModEvents {
-    @SubscribeEvent
-    public static void onClientSetup(FMLClientSetupEvent event) {}
-  }
 }

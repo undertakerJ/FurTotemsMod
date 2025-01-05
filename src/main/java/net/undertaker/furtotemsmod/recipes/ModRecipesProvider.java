@@ -9,8 +9,7 @@ import net.minecraft.data.recipes.UpgradeRecipeBuilder;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.ShapedRecipe;
-import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.crafting.conditions.IConditionBuilder;
 import net.undertaker.furtotemsmod.items.ModItems;
 
@@ -21,11 +20,49 @@ public class ModRecipesProvider extends RecipeProvider implements IConditionBuil
 
   @Override
   protected void buildCraftingRecipes(Consumer<FinishedRecipe> recipeConsumer) {
+    ShapedRecipeBuilder.shaped(ModItems.IRON_TOTEMIC_EMPOWERMENT.get())
+        .pattern("IBI")
+        .pattern("BSB")
+        .pattern("IBI")
+        .define('I', Items.IRON_INGOT)
+        .define('B', Blocks.IRON_BLOCK)
+        .define('S', Blocks.STONE)
+        .unlockedBy(
+            getHasName(ModItems.COPPER_STAFF_ITEM.get()), has(ModItems.COPPER_STAFF_ITEM.get()))
+        .save(recipeConsumer);
+    ShapedRecipeBuilder.shaped(ModItems.GOLD_TOTEMIC_EMPOWERMENT.get())
+        .pattern("IBI")
+        .pattern("BSB")
+        .pattern("IBI")
+        .define('I', Items.GOLD_INGOT)
+        .define('B', Blocks.GOLD_BLOCK)
+        .define('S', Blocks.STONE)
+        .unlockedBy(getHasName(ModItems.IRON_STAFF_ITEM.get()), has(ModItems.IRON_STAFF_ITEM.get()))
+        .save(recipeConsumer);
+    ShapedRecipeBuilder.shaped(ModItems.DIAMOND_TOTEMIC_EMPOWERMENT.get())
+        .pattern("IBI")
+        .pattern("BSB")
+        .pattern("IBI")
+        .define('I', Items.DIAMOND)
+        .define('B', Blocks.DIAMOND_BLOCK)
+        .define('S', Blocks.CRYING_OBSIDIAN)
+        .unlockedBy(getHasName(ModItems.GOLD_STAFF_ITEM.get()), has(ModItems.GOLD_STAFF_ITEM.get()))
+        .save(recipeConsumer);
+    ShapedRecipeBuilder.shaped(ModItems.NETHERITE_TOTEMIC_EMPOWERMENT.get())
+        .pattern("IBI")
+        .pattern("BSB")
+        .pattern("IBI")
+        .define('I', Items.NETHERITE_INGOT)
+        .define('B', Blocks.NETHERITE_BLOCK)
+        .define('S', Items.WITHER_SKELETON_SKULL)
+        .unlockedBy(
+            getHasName(ModItems.DIAMOND_STAFF_ITEM.get()), has(ModItems.DIAMOND_STAFF_ITEM.get()))
+        .save(recipeConsumer);
 
     generateSmithingRecipe(
         recipeConsumer,
         ModItems.COPPER_STAFF_ITEM.get(),
-        Items.IRON_INGOT,
+        ModItems.IRON_TOTEMIC_EMPOWERMENT.get(),
         ModItems.IRON_STAFF_ITEM.get(),
         "totem_staff_iron_upgrade",
         "has_iron_ingot");
@@ -33,7 +70,7 @@ public class ModRecipesProvider extends RecipeProvider implements IConditionBuil
     generateSmithingRecipe(
         recipeConsumer,
         ModItems.IRON_STAFF_ITEM.get(),
-        Items.GOLD_INGOT,
+        ModItems.GOLD_TOTEMIC_EMPOWERMENT.get(),
         ModItems.GOLD_STAFF_ITEM.get(),
         "totem_staff_gold_upgrade",
         "has_gold_ingot");
@@ -41,7 +78,7 @@ public class ModRecipesProvider extends RecipeProvider implements IConditionBuil
     generateSmithingRecipe(
         recipeConsumer,
         ModItems.GOLD_STAFF_ITEM.get(),
-        Items.DIAMOND,
+        ModItems.DIAMOND_TOTEMIC_EMPOWERMENT.get(),
         ModItems.DIAMOND_STAFF_ITEM.get(),
         "totem_staff_diamond_upgrade",
         "has_diamond");
@@ -49,7 +86,7 @@ public class ModRecipesProvider extends RecipeProvider implements IConditionBuil
     generateSmithingRecipe(
         recipeConsumer,
         ModItems.DIAMOND_STAFF_ITEM.get(),
-        Items.NETHERITE_INGOT,
+        ModItems.NETHERITE_TOTEMIC_EMPOWERMENT.get(),
         ModItems.NETHERITE_STAFF_ITEM.get(),
         "totem_staff_netherite_upgrade",
         "has_netherite_ingot");

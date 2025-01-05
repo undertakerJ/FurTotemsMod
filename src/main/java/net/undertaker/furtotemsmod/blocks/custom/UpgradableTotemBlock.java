@@ -1,25 +1,21 @@
 package net.undertaker.furtotemsmod.blocks.custom;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.undertaker.furtotemsmod.blocks.blockentity.UpgradableTotemBlockEntity;
+import net.undertaker.furtotemsmod.data.TotemSavedData;
 import net.undertaker.furtotemsmod.items.ModItems;
-import net.undertaker.furtotemsmod.util.ParticleUtils;
-import net.undertaker.furtotemsmod.util.TotemSavedData;
+import net.undertaker.furtotemsmod.items.custom.TotemItem;
 
 public class UpgradableTotemBlock extends BaseEntityBlock {
 
@@ -34,110 +30,103 @@ public class UpgradableTotemBlock extends BaseEntityBlock {
 
   @Override
   public void onPlace(
-      BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
+          BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
     super.onPlace(state, level, pos, oldState, isMoving);
+
     if (!level.isClientSide()
-        && level.getBlockEntity(pos) instanceof UpgradableTotemBlockEntity totemEntity) {
-      totemEntity.setOwner(null);
-      totemEntity.upgrade(UpgradableTotemBlockEntity.MaterialType.COPPER);
-      radiusTotem = totemEntity.getRadius();
+            && level.getBlockEntity(pos) instanceof UpgradableTotemBlockEntity totemEntity) {
+      if (totemEntity.getOwner() == null) {
+        totemEntity.setOwner(null);
+      }
+      if (totemEntity.getMaterialType() == null) {
+        totemEntity.upgrade(UpgradableTotemBlockEntity.MaterialType.COPPER);
+      }
       totemEntity.setChanged();
     }
   }
 
   @Override
-  public void onRemove(
-      BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-    super.onRemove(state, level, pos, newState, isMoving);
-
-    if (!level.isClientSide() && level.getBlockEntity(pos) instanceof UpgradableTotemBlockEntity) {
-
-      ServerLevel serverLevel = (ServerLevel) level;
-      TotemSavedData data = TotemSavedData.get(serverLevel);
-      data.removeTotem(pos);
-    }
-  }
-
-  @Override
-  public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-    if (!level.isClientSide && level.getBlockEntity(pos) instanceof UpgradableTotemBlockEntity totemEntity) {
+  public InteractionResult use(
+      BlockState state,
+      Level level,
+      BlockPos pos,
+      Player player,
+      InteractionHand hand,
+      BlockHitResult hit) {
+    if (!level.isClientSide
+        && level.getBlockEntity(pos) instanceof UpgradableTotemBlockEntity totemEntity) {
       ItemStack heldItem = player.getItemInHand(hand);
-      CompoundTag tag = heldItem.getOrCreateTag();
 
-      UpgradableTotemBlockEntity.MaterialType currentType = totemEntity.getMaterialType();
-      Item heldItemType = heldItem.getItem();
-
-      UpgradableTotemBlockEntity.MaterialType materialType = null;
-
-      if (heldItemType == ModItems.COPPER_STAFF_ITEM.get()) {
-        materialType = UpgradableTotemBlockEntity.MaterialType.COPPER;
-      } else if (heldItemType == ModItems.IRON_STAFF_ITEM.get()) {
-        materialType = UpgradableTotemBlockEntity.MaterialType.IRON;
-      } else if (heldItemType == ModItems.GOLD_STAFF_ITEM.get()) {
-        materialType = UpgradableTotemBlockEntity.MaterialType.GOLD;
-      } else if (heldItemType == ModItems.DIAMOND_STAFF_ITEM.get()) {
-        materialType = UpgradableTotemBlockEntity.MaterialType.DIAMOND;
-      } else if (heldItemType == ModItems.NETHERITE_STAFF_ITEM.get()) {
-        materialType = UpgradableTotemBlockEntity.MaterialType.NETHERITE;
-      }
-
-      if (materialType == null) {
-        player.displayClientMessage(Component.literal("Посох не настроен для улучшения!"), true);
-        return InteractionResult.FAIL;
-      }
-
-      if (materialType.ordinal() > currentType.ordinal()) {
-        applyUpgrade(level, pos, player, totemEntity, materialType);
-        player.displayClientMessage(Component.literal("Тотем улучшен до уровня: " + materialType.name()), true);
+      if (heldItem.getItem() instanceof TotemItem staffItem) {
+        applyUpgrade(level, pos, player, totemEntity, staffItem);
         return InteractionResult.SUCCESS;
-      } else if (materialType.ordinal() <= currentType.ordinal()) {
-        player.displayClientMessage(Component.literal("Этот уровень уже применен или выше!"), true);
-        return InteractionResult.FAIL;
       }
+
+      player.displayClientMessage(
+          Component.translatable("message.furtotemsmod.must_use_totem_staff"), true);
+      return InteractionResult.FAIL;
     }
 
     return super.use(state, level, pos, player, hand, hit);
   }
 
+  private UpgradableTotemBlockEntity.MaterialType getMaxUpgradeTypeForStaff(TotemItem staff) {
+    if (staff == ModItems.COPPER_STAFF_ITEM.get()) {
+      return UpgradableTotemBlockEntity.MaterialType.COPPER;
+    } else if (staff == ModItems.IRON_STAFF_ITEM.get()) {
+      return UpgradableTotemBlockEntity.MaterialType.IRON;
+    } else if (staff == ModItems.GOLD_STAFF_ITEM.get()) {
+      return UpgradableTotemBlockEntity.MaterialType.GOLD;
+    } else if (staff == ModItems.DIAMOND_STAFF_ITEM.get()) {
+      return UpgradableTotemBlockEntity.MaterialType.DIAMOND;
+    } else if (staff == ModItems.NETHERITE_STAFF_ITEM.get()) {
+      return UpgradableTotemBlockEntity.MaterialType.NETHERITE;
+    }
+    return UpgradableTotemBlockEntity.MaterialType.COPPER;
+  }
 
   private void applyUpgrade(
       Level level,
       BlockPos pos,
       Player player,
       UpgradableTotemBlockEntity totemEntity,
-      UpgradableTotemBlockEntity.MaterialType newType) {
-    if (totemEntity.getOwner() == null) {
-      totemEntity.setOwner(player.getUUID());
+      TotemItem staffItem) {
+
+
+
+    UpgradableTotemBlockEntity.MaterialType currentType = totemEntity.getMaterialType();
+    UpgradableTotemBlockEntity.MaterialType maxType = getMaxUpgradeTypeForStaff(staffItem);
+    UpgradableTotemBlockEntity.MaterialType nextType;
+
+
+    if (currentType.ordinal() >= maxType.ordinal()) {
+      nextType = UpgradableTotemBlockEntity.MaterialType.COPPER;
+    } else {
+      nextType = UpgradableTotemBlockEntity.MaterialType.values()[currentType.ordinal() + 1];
     }
 
     if (level instanceof ServerLevel serverLevel) {
+      if (totemEntity.getOwner() == null) {
+        totemEntity.setOwner(player.getUUID());
+      }
+
       TotemSavedData data = TotemSavedData.get(serverLevel);
 
-      if (data.isOverlapping(pos, newType.getRadius(), player.getUUID())) {
+      if (data.isOverlapping(pos, nextType.getRadius(), player.getUUID())) {
         player.displayClientMessage(
-            Component.literal("Улучшение невозможно: зоны тотемов пересекаются!"), true);
+                Component.translatable("message.furtotemsmod.upgrade_impossible_zones_overlap"), true);
         return;
       }
 
-      totemEntity.upgrade(newType);
-      data.addTotem(pos, totemEntity.getOwner(), totemEntity.getRadius(), "Upgradable");
-      radiusTotem = totemEntity.getRadius();
+
+      totemEntity.upgrade(nextType);
       totemEntity.setChanged();
+
       player.displayClientMessage(
-              Component.literal("Тотем улучшен до уровня " + newType.name() + "!"), true);
+          Component.literal(
+              Component.translatable("message.furtotemsmod.totem_upgraded_to_level").getString()
+                  + nextType.name()),
+          true);
     }
-  }
-
-  private int radiusTotem;
-
-  @Override
-  public void animateTick(BlockState pState, Level pLevel, BlockPos pPos, RandomSource pRandom) {
-    if (!pLevel.isClientSide) return;
-
-    double centerX = pPos.getX() + 0.5;
-    double centerY = pPos.getY() + 0.5;
-    double centerZ = pPos.getZ() + 0.5;
-
-    ParticleUtils.spawnCircularParticles(pLevel, centerX, centerY, centerZ, radiusTotem);
   }
 }

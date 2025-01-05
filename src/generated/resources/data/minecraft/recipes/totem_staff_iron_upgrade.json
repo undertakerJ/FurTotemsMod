@@ -1,7 +1,7 @@
 {
   "type": "minecraft:smithing",
   "addition": {
-    "item": "minecraft:iron_ingot"
+    "item": "furtotemsmod:iron_totemic_empowerment"
   },
   "base": {
     "item": "furtotemsmod:copper_staff_item"

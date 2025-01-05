@@ -1,7 +1,7 @@
 {
   "type": "minecraft:smithing",
   "addition": {
-    "item": "minecraft:diamond"
+    "item": "furtotemsmod:diamond_totemic_empowerment"
   },
   "base": {
     "item": "furtotemsmod:gold_staff_item"

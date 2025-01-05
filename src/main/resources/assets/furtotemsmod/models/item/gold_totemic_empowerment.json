@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "furtotemsmod:item/gold_totemic_empowerment"
+  }
+}

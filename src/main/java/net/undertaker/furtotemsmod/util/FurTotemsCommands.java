@@ -3,7 +3,7 @@ package net.undertaker.furtotemsmod.util;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import java.awt.*;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -14,6 +14,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.undertaker.furtotemsmod.data.TotemSavedData;
 
 public class FurTotemsCommands {
   public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -56,11 +57,8 @@ public class FurTotemsCommands {
                                   ServerPlayer sender = context.getSource().getPlayer();
 
                                   TotemSavedData data = TotemSavedData.get(sender.getLevel());
-                                  BlockPos nearestTotem = data.getNearestTotem(sender.getOnPos());
-                                  TotemSavedData.TotemData totemData =
-                                      data.getTotemDataMap().get(nearestTotem);
-                                  if (totemData != null) {
-                                    totemData.addToBlacklist(target.getUUID());
+                                  if (data != null) {
+                                    data.addToBlacklist(sender.getUUID() ,target.getUUID());
                                     context
                                         .getSource()
                                         .sendSuccess(
@@ -87,11 +85,8 @@ public class FurTotemsCommands {
                                   ServerPlayer sender = context.getSource().getPlayer();
 
                                   TotemSavedData data = TotemSavedData.get(sender.getLevel());
-                                  BlockPos nearestTotem = data.getNearestTotem(sender.getOnPos());
-                                  TotemSavedData.TotemData totemData =
-                                      data.getTotemDataMap().get(nearestTotem);
-                                  if (totemData != null) {
-                                    totemData.removeFromBlacklist(target.getUUID());
+                                  if (data != null) {
+                                    data.removeFromBlacklist(sender.getUUID(), target.getUUID());
                                     context
                                         .getSource()
                                         .sendSuccess(

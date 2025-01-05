@@ -1,7 +1,9 @@
 package net.undertaker.furtotemsmod.blocks.blockentity;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -9,7 +11,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.undertaker.furtotemsmod.Config;
 import net.undertaker.furtotemsmod.blocks.ModBlockEntities;
-import net.undertaker.furtotemsmod.util.TotemSavedData;
+import net.undertaker.furtotemsmod.data.TotemSavedData;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -99,17 +101,16 @@ public class UpgradableTotemBlockEntity extends BlockEntity {
   }
 
   public void upgrade(MaterialType newType) {
-    if (newType.ordinal() > this.materialType.ordinal()) {
-      this.materialType = newType;
-      this.radius = newType.getRadius();
-      setChanged();
+    this.materialType = newType;
+    this.radius = newType.getRadius();
+    setChanged();
 
-      if (level instanceof ServerLevel serverLevel) {
-        TotemSavedData data = TotemSavedData.get(serverLevel);
-        data.updateTotem(this.getBlockPos(), this.ownerUUID, this.radius, "Upgradable");
-      }
+    if (level instanceof ServerLevel serverLevel) {
+      TotemSavedData data = TotemSavedData.get(serverLevel);
+      data.updateTotem(this.getBlockPos(), this.ownerUUID, this.radius, "Upgradable");
     }
   }
+
 
 
   @Override
