@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "B": {
+      "item": "minecraft:diamond_block"
+    },
+    "I": {
+      "item": "minecraft:diamond"
+    },
+    "S": {
+      "item": "minecraft:crying_obsidian"
+    }
+  },
+  "pattern": [
+    "IBI",
+    "BSB",
+    "IBI"
+  ],
+  "result": {
+    "item": "furtotemsmod:diamond_totemic_empowerment"
+  }
+}

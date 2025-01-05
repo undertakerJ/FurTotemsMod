@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "B": {
+      "item": "minecraft:netherite_block"
+    },
+    "I": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "S": {
+      "item": "minecraft:wither_skeleton_skull"
+    }
+  },
+  "pattern": [
+    "IBI",
+    "BSB",
+    "IBI"
+  ],
+  "result": {
+    "item": "furtotemsmod:netherite_totemic_empowerment"
+  }
+}

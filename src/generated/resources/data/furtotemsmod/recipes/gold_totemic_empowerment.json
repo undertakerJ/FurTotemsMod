@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "B": {
+      "item": "minecraft:gold_block"
+    },
+    "I": {
+      "item": "minecraft:gold_ingot"
+    },
+    "S": {
+      "item": "minecraft:stone"
+    }
+  },
+  "pattern": [
+    "IBI",
+    "BSB",
+    "IBI"
+  ],
+  "result": {
+    "item": "furtotemsmod:gold_totemic_empowerment"
+  }
+}
