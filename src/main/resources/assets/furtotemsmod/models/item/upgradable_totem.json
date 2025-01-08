@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "furtotemsmod:item/copper_staff_item"
+  }
+}

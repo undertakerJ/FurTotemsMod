@@ -1,6 +1,7 @@
 package net.undertaker.furtotemsmod.blocks;
 
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.Material;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -10,6 +11,7 @@ import net.undertaker.furtotemsmod.FurTotemsMod;
 import net.undertaker.furtotemsmod.blocks.blockentity.UpgradableTotemBlockEntity;
 import net.undertaker.furtotemsmod.blocks.custom.SmallTotemBlock;
 import net.undertaker.furtotemsmod.blocks.custom.UpgradableTotemBlock;
+import net.undertaker.furtotemsmod.blocks.custom.WhiteFoxPlushie;
 
 public class ModBlocks {
 
@@ -31,10 +33,13 @@ public static final RegistryObject<Block> UPGRADABLE_TOTEM =
           "upgradable_totem",
           () ->
               new UpgradableTotemBlock(
-                  Block.Properties.of(Material.STONE)
+                  Block.Properties.copy(Blocks.BEDROCK)
                       .strength(2.0F)
                       .noOcclusion()
                       .explosionResistance(999999)));
+  public static final RegistryObject<Block> FOX_PLUSHIE =
+      BLOCKS.register(
+          "white_fox_plushie", () -> new WhiteFoxPlushie(Block.Properties.copy(Blocks.WHITE_WOOL).noOcclusion()));
 
   public static void register(IEventBus eventBus) {
     BLOCKS.register(eventBus);

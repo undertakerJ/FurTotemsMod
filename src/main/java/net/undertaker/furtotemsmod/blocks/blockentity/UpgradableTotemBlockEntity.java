@@ -24,41 +24,31 @@ public class UpgradableTotemBlockEntity extends BlockEntity {
   public enum MaterialType {
     COPPER(
             () -> Config.UPGRADEABLE_TOTEM_COPPER_RADIUS.get(),
-            "textures/totem/copper.png",
-            "models/totem/copper.json"),
+            "textures/totem/copper_totem_block.png"),
     IRON(
             () -> Config.UPGRADEABLE_TOTEM_IRON_RADIUS.get(),
-            "textures/totem/iron.png",
-            "models/totem/iron.json"),
+            "textures/totem/iron_totem_block.png"),
     GOLD(
             () -> Config.UPGRADEABLE_TOTEM_GOLD_RADIUS.get(),
-            "textures/totem/gold.png",
-            "models/totem/gold.json"),
+            "textures/totem/gold_totem_block.png"),
     DIAMOND(
             () -> Config.UPGRADEABLE_TOTEM_DIAMOND_RADIUS.get(),
-            "textures/totem/diamond.png",
-            "models/totem/diamond.json"),
+            "textures/totem/diamond_totem_block.png"),
     NETHERITE(
             () -> Config.UPGRADEABLE_TOTEM_NETHERITE_RADIUS.get(),
-            "textures/totem/netherite.png",
-            "models/totem/netherite.json");
+            "textures/totem/netherite_totem_block.png");
 
     private final Supplier<Integer> radiusSupplier;
     private final String texture;
-    private final String model;
 
-    MaterialType(Supplier<Integer> radiusSupplier, String texture, String model) {
+    MaterialType(Supplier<Integer> radiusSupplier, String texture) {
       this.radiusSupplier = radiusSupplier;
       this.texture = texture;
-      this.model = model;
+
     }
 
     public int getRadius() {
       return radiusSupplier.get();
-    }
-
-    public String getModel() {
-      return model;
     }
 
     public String getTexture() {
@@ -98,6 +88,11 @@ public class UpgradableTotemBlockEntity extends BlockEntity {
 
   public MaterialType getMaterialType() {
     return materialType;
+  }
+
+  public void setMaterialType(MaterialType materialType) {
+    this.materialType = materialType;
+    setChanged();
   }
 
   public void upgrade(MaterialType newType) {

@@ -3,10 +3,15 @@ package net.undertaker.furtotemsmod.blocks.custom;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.undertaker.furtotemsmod.blocks.blockentity.SmallTotemBlockEntity;
 import net.undertaker.furtotemsmod.data.TotemSavedData;
 
@@ -17,6 +22,18 @@ public class SmallTotemBlock extends BaseEntityBlock {
         super(properties);
     }
     private long placedTime;
+
+    public static final VoxelShape SHAPE = Block.box(3,0,3, 13, 14, 13);
+
+    @Override
+    public VoxelShape getShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
+        return SHAPE;
+    }
+
+    @Override
+    public RenderShape getRenderShape(BlockState pState) {
+        return RenderShape.MODEL;
+    }
 
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
@@ -48,7 +65,7 @@ public class SmallTotemBlock extends BaseEntityBlock {
             level.scheduleTick(pos, this, 20);
         } else {
             level.destroyBlock(pos, false);
-           data.removeTotem(pos);
+           data.removeTotem(level, pos);
         }
     }
     }

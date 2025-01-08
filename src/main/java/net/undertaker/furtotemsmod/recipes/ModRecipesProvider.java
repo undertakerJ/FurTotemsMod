@@ -11,6 +11,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.crafting.conditions.IConditionBuilder;
+import net.undertaker.furtotemsmod.blocks.ModBlocks;
 import net.undertaker.furtotemsmod.items.ModItems;
 
 public class ModRecipesProvider extends RecipeProvider implements IConditionBuilder {
@@ -20,6 +21,22 @@ public class ModRecipesProvider extends RecipeProvider implements IConditionBuil
 
   @Override
   protected void buildCraftingRecipes(Consumer<FinishedRecipe> recipeConsumer) {
+    ShapedRecipeBuilder.shaped(ModItems.COPPER_STAFF_ITEM.get())
+        .pattern("###")
+        .pattern("# #")
+        .pattern("I#I")
+        .define('#', Blocks.COPPER_BLOCK)
+        .define('I', Items.COPPER_INGOT)
+        .unlockedBy(getHasName(Blocks.COPPER_BLOCK), has(Blocks.COPPER_BLOCK))
+        .save(recipeConsumer);
+    ShapedRecipeBuilder.shaped(ModItems.SMALL_TOTEM.get())
+        .pattern("SF")
+        .pattern("FS")
+        .define('F', Items.FLINT)
+        .define('S', Items.STICK)
+        .unlockedBy(getHasName(Items.FLINT), has(Items.FLINT))
+        .save(recipeConsumer);
+
     ShapedRecipeBuilder.shaped(ModItems.IRON_TOTEMIC_EMPOWERMENT.get())
         .pattern("IBI")
         .pattern("BSB")

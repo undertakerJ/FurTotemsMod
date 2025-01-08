@@ -7,9 +7,16 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.SpawnerBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.undertaker.furtotemsmod.Config;
 import net.undertaker.furtotemsmod.FurTotemsMod;
+import net.undertaker.furtotemsmod.util.PlacedBlockManager;
 import net.undertaker.furtotemsmod.util.ServerLevelAccessor;
+
+import static net.undertaker.furtotemsmod.util.PlacedBlockManager.placedBlocks;
+import static net.undertaker.furtotemsmod.util.PlacedBlockManager.placedBlocksInZone;
 
 public class TotemSavedData extends SavedData {
   private final Map<BlockPos, TotemData> totemDataMap = new HashMap<>();
@@ -147,7 +154,6 @@ public class TotemSavedData extends SavedData {
 
       double radius = totem.getRadius();
 
-      // Check if the player is within the radius of the totem
       if (totemPos.distSqr(playerPos) <= radius * radius) {
         affectingTotems.add(totemPos);
       }
@@ -176,6 +182,16 @@ public class TotemSavedData extends SavedData {
     setDirty();
   }
 
+  public Set<BlockPos> getSmallTotemPositions() {
+    Set<BlockPos> smallTotemPositions = new HashSet<>();
+    for (Map.Entry<BlockPos, TotemData> entry : totemDataMap.entrySet()) {
+      if ("Small".equals(entry.getValue().getType())) {
+        smallTotemPositions.add(entry.getKey());
+      }
+    }
+    return smallTotemPositions;
+  }
+
   public void removeMemberFromTotem(UUID ownerUUID, UUID memberUUID) {
     totemDataMap.values().stream()
         .filter(totem -> totem.getOwner().equals(ownerUUID))
@@ -196,17 +212,24 @@ public class TotemSavedData extends SavedData {
   public void addTotem(BlockPos pos, UUID owner, int radius, String type) {
     ServerLevel level = ServerLevelAccessor.getServerLevel();
     if(level.isClientSide()) return;
-    totemDataMap.put(pos, new TotemData(owner, radius, type));
+    TotemData newTotem = new TotemData(owner, radius, type);
+    totemDataMap.put(pos, newTotem);
     TotemCount count = getPlayerTotemCount(owner);
     if ("Small".equals(type)) {
       count.incrementSmallTotems();
     } else if ("Upgradable".equals(type)) {
       count.incrementBigTotems();
     }
+    for (BlockPos blockPos : placedBlocksInZone.keySet()) {
+      if (blockPos.distSqr(pos) <= Math.pow(radius, 2)) {
+        placedBlocksInZone.put(blockPos, newTotem);
+        System.out.println("Блок " + blockPos + " возвращён в зону нового тотема.");
+      }
+    }
     setDirty();
   }
 
-  public void removeTotem(BlockPos pos) {
+  public void removeTotem(ServerLevel level, BlockPos pos) {
     TotemData removedTotem = totemDataMap.remove(pos);
     if (removedTotem != null) {
       UUID owner = removedTotem.getOwner();
@@ -216,6 +239,7 @@ public class TotemSavedData extends SavedData {
       } else if ("Upgradable".equals(removedTotem.getType())) {
         count.decrementBigTotems();
       }
+      PlacedBlockManager.onTotemDestroyed(level ,removedTotem);
       setDirty();
     }
   }

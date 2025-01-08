@@ -3,6 +3,8 @@ package net.undertaker.furtotemsmod;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.List;
+
 // An example config class. This is not required, but it's a good idea to have one to keep your
 // config organized.
 // Demonstrates how to use Forge's config APIs
@@ -27,8 +29,16 @@ public class Config {
   public static final ForgeConfigSpec.BooleanValue DISABLE_MOB_GRIEF;
   public static final ForgeConfigSpec.BooleanValue DISABLE_ITEM_PICKUP;
   public static final ForgeConfigSpec.BooleanValue DISABLE_ITEM_TOSS;
+  public static final ForgeConfigSpec.BooleanValue PLAYER_TOTEM_DEBUFFS;
+  public static final ForgeConfigSpec.BooleanValue CREATIVE_IGNORE_TOTEMS;
+
+  public static final ForgeConfigSpec.BooleanValue PREVENT_TOTEM_NEAR_SPAWNER;
+  public static final ForgeConfigSpec.IntValue SPAWNER_CHECK_RADIUS;
 
   public static final ForgeConfigSpec.IntValue SMALL_TOTEM_RADIUS;
+  public static final ForgeConfigSpec.BooleanValue BLOCK_DESTROY_IN_ZONE;
+
+  public static final ForgeConfigSpec.IntValue DELAY_BLOCK_DESTROY_IN_ZONE;
 
   public static final ForgeConfigSpec.IntValue UPGRADEABLE_TOTEM_COPPER_RADIUS;
   public static final ForgeConfigSpec.IntValue UPGRADEABLE_TOTEM_IRON_RADIUS;
@@ -38,15 +48,37 @@ public class Config {
 
   public static final ForgeConfigSpec.IntValue BLOCK_BREAK_DELAY;
 
+  public static final ForgeConfigSpec.ConfigValue<String> TOTEM_CONSUMED_BLOCK;
+  public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ALLOWED_NEAR_SMALL_TOTEM;
 
   static {
     ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
     builder.push("events");
-
+    TOTEM_CONSUMED_BLOCK = builder
+            .comment("The block ID required to place a Totem. Example: 'minecraft:copper_block'")
+            .define("totemConsumedBlock", "minecraft:copper_block");
+    ALLOWED_NEAR_SMALL_TOTEM = builder
+            .comment("List of block IDs that can be placed near small totems. Example: 'minecraft:stone'")
+            .defineList("allowedNearSmallTotem", List.of("minecraft:crafting_table", "minecraft:furnace", "minecraft:campfire"), obj -> obj instanceof String);
+    PREVENT_TOTEM_NEAR_SPAWNER = builder
+            .comment("Prevent placing Totems near Spawners (default - true)")
+            .define("preventTotemNearSpawner", true);
     ENABLE_BLOCK_BREAK_EVENT =
         builder
             .comment("Enable block breaking protection near totems(default - true)")
             .define("enableBlockBreakEvent", true);
+    PLAYER_TOTEM_DEBUFFS =
+        builder
+            .comment("Enable debuffs on player(mining fatigue and weakness) for 60 seconds after placing a totem(default - false)")
+            .define("playerTotemDebuffs", false);
+    BLOCK_DESTROY_IN_ZONE =
+        builder
+            .comment("Enable destroying all placed block in totem's zone, after totem is destroyed(default - true)")
+            .define("blockDestroyInZone", true);
+    CREATIVE_IGNORE_TOTEMS =
+        builder
+            .comment("Creative players can ignore totem zone(default - false)")
+            .define("creativeIgnoreTotems", false);
     ENABLE_BLOCK_PLACE_EVENT =
         builder
             .comment("Enable block placing protection near totems(default - true)")
@@ -141,6 +173,14 @@ public class Config {
             .comment(
                 "Time in seconds, after blocks in no-zone will be destroyed(default - 5, min - 1, max - 300)")
             .defineInRange("blockBreakDelay", 5, 1, 300);
+    DELAY_BLOCK_DESTROY_IN_ZONE =
+        builder
+            .comment(
+                "Time in seconds, after blocks that was in totem zone will be destroyed(default - 60, min - 1, max - 600)")
+            .defineInRange("blockDestroyInZoneDelay", 60, 1, 600);
+    SPAWNER_CHECK_RADIUS = builder
+            .comment("Radius to check for Spawners around the Totem placement(default - 48, min - 16, max - 128)")
+            .defineInRange("spawnerCheckRadius", 48, 16, 128);
     builder.pop();
 
     SERVER_CONFIG = builder.build();

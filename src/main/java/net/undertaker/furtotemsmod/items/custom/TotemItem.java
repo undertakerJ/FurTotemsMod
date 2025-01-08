@@ -1,15 +1,21 @@
 package net.undertaker.furtotemsmod.items.custom;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -18,7 +24,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SpawnerBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
@@ -26,21 +33,17 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.undertaker.furtotemsmod.Config;
 import net.undertaker.furtotemsmod.FurTotemsMod;
 import net.undertaker.furtotemsmod.attributes.ModAttributes;
 import net.undertaker.furtotemsmod.blocks.ModBlocks;
 import net.undertaker.furtotemsmod.blocks.blockentity.UpgradableTotemBlockEntity;
 import net.undertaker.furtotemsmod.data.ClientTotemSavedData;
-import net.undertaker.furtotemsmod.items.ModItems;
+import net.undertaker.furtotemsmod.data.TotemSavedData;
 import net.undertaker.furtotemsmod.networking.ModNetworking;
 import net.undertaker.furtotemsmod.networking.packets.ChangeModePacket;
-import net.undertaker.furtotemsmod.data.TotemSavedData;
 import net.undertaker.furtotemsmod.render.ClientTotemRadiusRender;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 @Mod.EventBusSubscriber(modid = FurTotemsMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class TotemItem extends Item {
@@ -155,13 +158,20 @@ public class TotemItem extends Item {
     return StaffMode.PLACE_TOTEM;
   }
 
-  private InteractionResult handlePlaceTotem(UseOnContext context, Level level, BlockPos pos, Player player) {
+  public static Block getConfiguredBlock() {
+      String blockId = Config.TOTEM_CONSUMED_BLOCK.get();
+      Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blockId));
+      return block != null ? block : Blocks.AIR;
+  }
+
+  private InteractionResult handlePlaceTotem(
+      UseOnContext context, Level level, BlockPos pos, Player player) {
     if (!player.isShiftKeyDown()) return InteractionResult.FAIL;
-    if(level.isClientSide) return InteractionResult.FAIL;
+    if (level.isClientSide) return InteractionResult.FAIL;
     ItemStack heldItem = context.getItemInHand();
     if (!(heldItem.getItem() instanceof TotemItem)) {
       player.displayClientMessage(
-              Component.translatable("message.furtotemsmod.must_use_totem_staff"), true);
+          Component.translatable("message.furtotemsmod.must_use_totem_staff"), true);
       return InteractionResult.FAIL;
     }
 
@@ -170,56 +180,78 @@ public class TotemItem extends Item {
     int currentBigTotems = data.getPlayerTotemCount(player.getUUID()).getBigTotems();
     if (currentBigTotems >= maxBigTotems) {
       player.displayClientMessage(
-              Component.translatable("message.furtotemsmod.too_many_large_totems"), true);
+          Component.translatable("message.furtotemsmod.too_many_large_totems"), true);
       return InteractionResult.FAIL;
     }
 
-    UpgradableTotemBlockEntity.MaterialType initialType = UpgradableTotemBlockEntity.MaterialType.COPPER;
-    if (!player.getInventory().contains(new ItemStack(initialType.getRequiredBlock()))) {
+    if (Config.PREVENT_TOTEM_NEAR_SPAWNER.get()) {
+      int radius = Config.SPAWNER_CHECK_RADIUS.get();
+      BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
+      for (int dx = -radius; dx <= radius; dx++) {
+        for (int dy = -radius; dy <= radius; dy++) {
+          for (int dz = -radius; dz <= radius; dz++) {
+            mutablePos.set(pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz);
+            if (level.getBlockState(mutablePos).getBlock() instanceof SpawnerBlock) {
+              player.displayClientMessage(
+                  Component.translatable("message.furtotemsmod.nearby_spawner"), true);
+              return InteractionResult.FAIL;
+            }
+          }
+        }
+      }
+    }
+
+    UpgradableTotemBlockEntity.MaterialType initialType =
+        UpgradableTotemBlockEntity.MaterialType.COPPER;
+    Block requiredBlock = getConfiguredBlock();
+    if (!player.getInventory().contains(requiredBlock.asItem().getDefaultInstance())) {
       player.displayClientMessage(
-              Component.literal(
-                      Component.translatable("message.furtotemsmod.missing_required_block").getString()
-                              + initialType.name()),
-              true);
+          Component.literal(
+              Component.translatable("message.furtotemsmod.missing_required_block").getString()
+                  + initialType.name()),
+          true);
       return InteractionResult.FAIL;
     }
 
     BlockPos totemPos = pos.above();
     if (data.isOverlapping(totemPos, initialType.getRadius(), player.getUUID())) {
       player.displayClientMessage(
-              Component.translatable("message.furtotemsmod.totem_overlaps_another_zone"), true);
+          Component.translatable("message.furtotemsmod.totem_overlaps_another_zone"), true);
       return InteractionResult.FAIL;
     }
     BlockState totemBlockState = ModBlocks.UPGRADABLE_TOTEM.get().defaultBlockState();
 
     level.setBlockAndUpdate(totemPos, totemBlockState);
+    if (level.getBlockState(totemPos).is(ModBlocks.UPGRADABLE_TOTEM.get())
+        && level.getBlockEntity(totemPos) instanceof UpgradableTotemBlockEntity totemEntity) {
+      totemEntity.setOwner(player.getUUID());
+      totemEntity.upgrade(initialType);
 
-      if (level.getBlockState(totemPos).is(ModBlocks.UPGRADABLE_TOTEM.get()) && level.getBlockEntity(totemPos) instanceof UpgradableTotemBlockEntity totemEntity) {
-        totemEntity.setOwner(player.getUUID());
-        totemEntity.upgrade(initialType);
+      data.addTotem(totemPos, player.getUUID(), initialType.getRadius(), "Upgradable");
 
-        data.addTotem(totemPos, player.getUUID(), initialType.getRadius(), "Upgradable");
+      removeItemFromInventory(player, requiredBlock.asItem(), 1);
 
-        removeItemFromInventory(player, initialType.getRequiredBlock().asItem(), 1);
+      updateTotemCoordinatesOnStaff(heldItem, level, player.getUUID());
 
-        updateTotemCoordinatesOnStaff(heldItem, level, player.getUUID());
+      player.displayClientMessage(
+          Component.literal(
+              Component.translatable("message.furtotemsmod.totem_set_with_level").getString()
+                  + initialType.name()),
+          true);
 
-        player.displayClientMessage(
-                Component.literal(
-                        Component.translatable("message.furtotemsmod.totem_set_with_level").getString()
-                                + initialType.name()),
-                true);
-
-        return InteractionResult.SUCCESS;
-      } else {
-        level.removeBlock(totemPos, false);
-        player.displayClientMessage(
-                Component.translatable("message.furtotemsmod.failed_to_place_totem_entity"), true);
+      if (Config.PLAYER_TOTEM_DEBUFFS.get()) {
+        player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 20 * 60, 1));
+        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20 * 60, 0));
       }
+      return InteractionResult.SUCCESS;
+    } else {
+      level.removeBlock(totemPos, false);
+      player.displayClientMessage(
+          Component.translatable("message.furtotemsmod.failed_to_place_totem_entity"), true);
+    }
 
     return InteractionResult.FAIL;
   }
-
 
   private InteractionResult handleRemoveTotem(Level level, BlockPos pos, Player player) {
     ServerLevel serverLevel = (ServerLevel) level;
@@ -240,7 +272,7 @@ public class TotemItem extends Item {
 
     level.destroyBlock(pos, false);
 
-    data.removeTotem(pos);
+    data.removeTotem(serverLevel ,pos);
 
     player.displayClientMessage(
         Component.translatable("message.furtotemsmod.totem_removed_successfully"), true);
@@ -288,9 +320,6 @@ public class TotemItem extends Item {
     tag.put("TotemCoordinates", coordinates);
     staff.setTag(tag);
   }
-
-
-
 
   private InteractionResult handleRemoveMember(
       Level level, BlockPos pos, Player player, LivingEntity pInteractionTarget) {
@@ -371,7 +400,8 @@ public class TotemItem extends Item {
   }
 
   @Override
-  public void inventoryTick(ItemStack pStack, Level pLevel, Entity pEntity, int pSlotId, boolean pIsSelected) {
+  public void inventoryTick(
+      ItemStack pStack, Level pLevel, Entity pEntity, int pSlotId, boolean pIsSelected) {
     if (!pLevel.isClientSide || !(pEntity instanceof Player player)) return;
     if (player.getMainHandItem().getItem() instanceof TotemItem) {
       ClientTotemRadiusRender.getInstance().enableRadiusRendering();
@@ -381,19 +411,52 @@ public class TotemItem extends Item {
   }
 
   @Override
-  public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
+  public void appendHoverText(
+          ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
     ClientTotemSavedData clientData = ClientTotemSavedData.get();
     Map<BlockPos, TotemSavedData.TotemData> totemDataMap = clientData.getTotemDataMap();
 
-    if (!totemDataMap.isEmpty()) {
-      tooltip.add(Component.translatable("message.furtotemsmod.totem_tooltip").withStyle(ChatFormatting.AQUA));
-      for (BlockPos pos : totemDataMap.keySet()) {
-        tooltip.add(Component.literal(pos.toShortString()));
+    if (Screen.hasShiftDown()) {
+      CompoundTag tag = stack.getOrCreateTag();
+      StaffMode currentMode;
+      try {
+        currentMode = StaffMode.valueOf(tag.getString("Mode"));
+      } catch (IllegalArgumentException | NullPointerException e) {
+        currentMode = StaffMode.PLACE_TOTEM;
       }
+
+      tooltip.add(
+              Component.translatable("message.furtotemsmod.mode_description." + currentMode.name())
+                      .withStyle(ChatFormatting.GRAY));
+
     } else {
-      tooltip.add(Component.literal("No Totems Found"));
+      tooltip.add(
+              Component.translatable("message.furtotemsmod.hold_shift_for_details")
+                      .withStyle(ChatFormatting.DARK_GRAY));
+
+      long bigTotemCount = totemDataMap.values().stream()
+              .filter(data -> "Upgradable".equals(data.getType()))
+              .count();
+
+      tooltip.add(
+              Component.translatable("message.furtotemsmod.big_totem_count", bigTotemCount)
+                      .withStyle(ChatFormatting.AQUA));
+
+      if (!totemDataMap.isEmpty()) {
+        tooltip.add(
+                Component.translatable("message.furtotemsmod.totem_locations")
+                        .withStyle(ChatFormatting.GOLD));
+        for (Map.Entry<BlockPos, TotemSavedData.TotemData> entry : totemDataMap.entrySet()) {
+          if ("Upgradable".equals(entry.getValue().getType())) {
+            tooltip.add(Component.literal(entry.getKey().toShortString()));
+          }
+        }
+      } else {
+        tooltip.add(
+                Component.translatable("message.furtotemsmod.no_totems_found")
+                        .withStyle(ChatFormatting.RED));
+      }
     }
   }
-
 
 }

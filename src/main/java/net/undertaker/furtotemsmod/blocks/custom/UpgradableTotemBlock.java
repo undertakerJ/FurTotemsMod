@@ -3,25 +3,34 @@ package net.undertaker.furtotemsmod.blocks.custom;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.undertaker.furtotemsmod.blocks.blockentity.UpgradableTotemBlockEntity;
 import net.undertaker.furtotemsmod.data.TotemSavedData;
 import net.undertaker.furtotemsmod.items.ModItems;
 import net.undertaker.furtotemsmod.items.custom.TotemItem;
+import net.undertaker.furtotemsmod.networking.ModNetworking;
+import net.undertaker.furtotemsmod.networking.packets.SyncTotemMaterialPacket;
 
 public class UpgradableTotemBlock extends BaseEntityBlock {
 
   public UpgradableTotemBlock(Properties properties) {
     super(properties);
   }
+
+  public static final VoxelShape SHAPE = Block.box(3,0,3, 13, 14, 13);
 
   @Override
   public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
@@ -85,6 +94,11 @@ public class UpgradableTotemBlock extends BaseEntityBlock {
     return UpgradableTotemBlockEntity.MaterialType.COPPER;
   }
 
+  @Override
+  public VoxelShape getShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
+    return SHAPE;
+  }
+
   private void applyUpgrade(
       Level level,
       BlockPos pos,
@@ -92,12 +106,9 @@ public class UpgradableTotemBlock extends BaseEntityBlock {
       UpgradableTotemBlockEntity totemEntity,
       TotemItem staffItem) {
 
-
-
     UpgradableTotemBlockEntity.MaterialType currentType = totemEntity.getMaterialType();
     UpgradableTotemBlockEntity.MaterialType maxType = getMaxUpgradeTypeForStaff(staffItem);
     UpgradableTotemBlockEntity.MaterialType nextType;
-
 
     if (currentType.ordinal() >= maxType.ordinal()) {
       nextType = UpgradableTotemBlockEntity.MaterialType.COPPER;
@@ -122,7 +133,9 @@ public class UpgradableTotemBlock extends BaseEntityBlock {
       totemEntity.upgrade(nextType);
       totemEntity.setChanged();
 
-      player.displayClientMessage(
+      ModNetworking.sendToAllPlayers(new SyncTotemMaterialPacket(pos, nextType), serverLevel);
+
+            player.displayClientMessage(
           Component.literal(
               Component.translatable("message.furtotemsmod.totem_upgraded_to_level").getString()
                   + nextType.name()),

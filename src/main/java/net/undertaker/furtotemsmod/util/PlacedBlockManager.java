@@ -1,12 +1,10 @@
 package net.undertaker.furtotemsmod.util;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -17,16 +15,24 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.undertaker.furtotemsmod.Config;
 import net.undertaker.furtotemsmod.FurTotemsMod;
+import net.undertaker.furtotemsmod.blocks.ModBlocks;
 import net.undertaker.furtotemsmod.data.TotemSavedData;
 
 @Mod.EventBusSubscriber(modid = FurTotemsMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class PlacedBlockManager {
 
-  private static final Map<BlockPos, Long> placedBlocks = new HashMap<>();
+  public static final Map<BlockPos, Long> placedBlocks = new HashMap<>();
+  public static final Map<BlockPos, TotemSavedData.TotemData> placedBlocksInZone = new HashMap<>();
 
-  public static void addBlock(Level level, BlockPos pos) {
+  public static void addBlock(Level level, BlockPos pos, TotemSavedData.TotemData totemData) {
     long gameTime = level.getGameTime();
-    placedBlocks.put(pos, gameTime);
+    if (totemData != null) {
+      if (Config.BLOCK_DESTROY_IN_ZONE.get()) {
+        placedBlocksInZone.put(pos, totemData);
+      }
+    } else {
+      placedBlocks.put(pos, gameTime);
+    }
   }
 
   public static void processBlocks(Level level) {
@@ -69,22 +75,78 @@ public class PlacedBlockManager {
     toRemove.forEach(placedBlocks::remove);
   }
 
+  public static void onTotemDestroyed(ServerLevel level, TotemSavedData.TotemData totemData) {
+    if (!Config.BLOCK_DESTROY_IN_ZONE.get()) return;
 
+    List<BlockPos> toDestroy = new ArrayList<>();
+    Map<BlockPos, UUID> blockTaskMap = new HashMap<>();
 
-  public static void destroyBlocksInRadius(ServerLevel level, BlockPos totemPos, int radius) {
-    List<BlockPos> blocksToDestroy = new ArrayList<>();
+    for (Map.Entry<BlockPos, TotemSavedData.TotemData> entry : placedBlocksInZone.entrySet()) {
+      BlockPos pos = entry.getKey();
+      TotemSavedData.TotemData blockTotemData = entry.getValue();
 
-    for (BlockPos pos : placedBlocks.keySet()) {
-      if (pos.distSqr(totemPos) <= radius * radius) {
-        blocksToDestroy.add(pos);
+      if (blockTotemData.equals(totemData)) {
+        toDestroy.add(pos);
       }
     }
 
-    for (BlockPos pos : blocksToDestroy) {
-      level.destroyBlock(pos, true);
-      placedBlocks.remove(pos);
+    for (BlockPos pos : toDestroy) {
+      BlockState blockState = level.getBlockState(pos);
+      if (!blockState.isAir()) {
+        int delayTicks = Config.DELAY_BLOCK_DESTROY_IN_ZONE.get() * 20;
+
+        UUID taskId = UUID.randomUUID();
+        blockTaskMap.put(pos, taskId);
+
+        DelayedTaskManager.addTask(
+                taskId,
+                delayTicks,
+                () -> {
+                  if (!isBlockInTotemRadius(level, pos)) {
+                    level.destroyBlock(pos, true);
+                    placedBlocksInZone.remove(pos);
+                    blockTaskMap.remove(pos);
+
+                  } else {
+                    System.out.println("Блок " + pos + " снова в радиусе тотема. Отмена разрушения.");
+                    DelayedTaskManager.cancelTask(taskId);
+                    placedBlocksInZone.put(pos, totemData);
+                  }
+                }
+
+        );
+        scheduleBlockProgress(level, pos, delayTicks, taskId);
+      }
     }
   }
+
+  private static boolean isBlockInTotemRadius(ServerLevel level, BlockPos pos) {
+    TotemSavedData data = TotemSavedData.get(level);
+    BlockPos nearestTotem = data.getNearestTotem(pos);
+    if (nearestTotem != null) {
+      double radius = data.getTotemData(nearestTotem).getRadius();
+      return nearestTotem.distSqr(pos) <= Math.pow(radius, 2);
+    }
+    return false;
+  }
+
+  private static void scheduleBlockProgress(ServerLevel level, BlockPos pos, int delayTicks, UUID taskId) {
+    int interval = delayTicks / 9;
+    for (int stage = 1; stage <= 9; stage++) {
+      int ticksForStage = interval * stage;
+      int finalStage = stage;
+      DelayedTaskManager.addTask(
+              UUID.randomUUID(),
+              ticksForStage,
+              () -> {
+                if (!DelayedTaskManager.isTaskCancelled(taskId)) {
+                  level.destroyBlockProgress(pos.hashCode(), pos, finalStage);
+                }
+              }
+      );
+    }
+  }
+
 
   @SubscribeEvent
   public static void levelTick(TickEvent.LevelTickEvent event) {
@@ -98,12 +160,26 @@ public class PlacedBlockManager {
   public static void decayBlocks(BlockEvent.EntityPlaceEvent event) {
     if (event.getLevel().isClientSide()) return;
 
-    Level level = (Level) event.getLevel();
+    ServerLevel level = (ServerLevel) event.getLevel();
     BlockPos pos = event.getPos();
     Block block = event.getPlacedBlock().getBlock();
 
-  if (isCorrectBlock(block.defaultBlockState())) {
-      addBlock(level, pos);
+    if (isCorrectBlock(block.defaultBlockState())) {
+      TotemSavedData data = TotemSavedData.get(level);
+      BlockPos nearestTotem = data.getNearestTotem(pos);
+
+      TotemSavedData.TotemData totemData =
+          nearestTotem != null
+                  && nearestTotem.distSqr(pos)
+                      <= Math.pow(data.getTotemData(nearestTotem).getRadius(), 2)
+              ? data.getTotemData(nearestTotem)
+              : null;
+      if (Config.CREATIVE_IGNORE_TOTEMS.get()
+          && event.getEntity() instanceof Player player
+          && player.isCreative()) {
+        return;
+      }
+      addBlock(level, pos, totemData);
     }
   }
 
@@ -154,6 +230,8 @@ public class PlacedBlockManager {
         && !state.is(Blocks.TALL_SEAGRASS)
         && !state.is(Blocks.MUSHROOM_STEM)
         && !state.is(Blocks.BROWN_MUSHROOM)
-        && !state.is(Blocks.RED_MUSHROOM);
+        && !state.is(Blocks.RED_MUSHROOM)
+        && !state.is(ModBlocks.UPGRADABLE_TOTEM.get())
+        && !state.is(ModBlocks.SMALL_TOTEM.get());
   }
 }
