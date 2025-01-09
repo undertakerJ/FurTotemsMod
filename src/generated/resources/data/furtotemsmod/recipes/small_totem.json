@@ -1,5 +1,6 @@
 {
   "type": "minecraft:crafting_shaped",
+  "category": "building",
   "key": {
     "F": {
       "item": "minecraft:flint"
@@ -14,5 +15,6 @@
   ],
   "result": {
     "item": "furtotemsmod:small_totem"
-  }
+  },
+  "show_notification": true
 }

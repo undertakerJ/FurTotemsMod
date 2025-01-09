@@ -1,34 +1,35 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_flint": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "minecraft:diamond_staff_item_smithing"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_totem": {
       "conditions": {
         "items": [
           {
             "items": [
-              "minecraft:flint"
+              "furtotemsmod:copper_staff_item"
             ]
           }
         ]
       },
       "trigger": "minecraft:inventory_changed"
-    },
-    "has_the_recipe": {
-      "conditions": {
-        "recipe": "furtotemsmod:small_totem"
-      },
-      "trigger": "minecraft:recipe_unlocked"
     }
   },
   "requirements": [
     [
-      "has_flint",
+      "has_totem",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "furtotemsmod:small_totem"
+      "minecraft:diamond_staff_item_smithing"
     ]
-  }
+  },
+  "sends_telemetry_event": false
 }

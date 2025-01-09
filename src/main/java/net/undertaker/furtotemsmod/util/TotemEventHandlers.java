@@ -11,7 +11,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
@@ -22,7 +21,6 @@ import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -37,7 +35,7 @@ import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.event.entity.living.LivingSpawnEvent;
+import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -51,7 +49,7 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.undertaker.furtotemsmod.Config;
+import net.undertaker.furtotemsmod.FurConfig;
 import net.undertaker.furtotemsmod.FurTotemsMod;
 import net.undertaker.furtotemsmod.attributes.ModAttributes;
 import net.undertaker.furtotemsmod.blocks.ModBlocks;
@@ -61,7 +59,6 @@ import net.undertaker.furtotemsmod.blocks.custom.UpgradableTotemBlock;
 import net.undertaker.furtotemsmod.data.TotemSavedData;
 import net.undertaker.furtotemsmod.items.ModItems;
 import net.undertaker.furtotemsmod.networking.ModNetworking;
-import net.undertaker.furtotemsmod.networking.packets.SyncTotemMaterialPacket;
 import net.undertaker.furtotemsmod.networking.packets.SyncTotemsPacket;
 
 @Mod.EventBusSubscriber(modid = FurTotemsMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -70,8 +67,8 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void onBlockBreakNearTotem(BlockEvent.BreakEvent event) {
     if (event.getLevel().isClientSide()) return;
-    if (!Config.ENABLE_BLOCK_BREAK_EVENT.get()) return;
-    if (event.getPlayer().isCreative() && Config.CREATIVE_IGNORE_TOTEMS.get()) return;
+    if (!FurConfig.ENABLE_BLOCK_BREAK_EVENT.get()) return;
+    if (event.getPlayer().isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
     ServerLevel serverLevel = (ServerLevel) event.getLevel();
     TotemSavedData data = TotemSavedData.get(serverLevel);
     BlockPos pos = event.getPos();
@@ -95,12 +92,12 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onBlockPlaceNearTotem(BlockEvent.EntityPlaceEvent event) {
-    if (event.getEntity().getLevel().isClientSide()) return;
-    if (!Config.ENABLE_BLOCK_PLACE_EVENT.get()) return;
+    if (event.getEntity().level().isClientSide()) return;
+    if (!FurConfig.ENABLE_BLOCK_PLACE_EVENT.get()) return;
     if (!(event.getEntity() instanceof Player player)) return;
 
-    if (player.isCreative() && Config.CREATIVE_IGNORE_TOTEMS.get()) return;
-    ServerLevel serverLevel = (ServerLevel) event.getEntity().getLevel();
+    if (player.isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
+    ServerLevel serverLevel = (ServerLevel) event.getEntity().level();
     TotemSavedData data = TotemSavedData.get(serverLevel);
     BlockPos pos = event.getPos();
     BlockPos nearestTotem = data.getNearestTotem(pos);
@@ -122,9 +119,9 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-    if (Config.DISABLE_BLOCK_INTERACTION.get() == false) return;
+    if (FurConfig.DISABLE_BLOCK_INTERACTION.get() == false) return;
     if (event.getLevel().isClientSide()) return;
-    if (event.getEntity().isCreative() && Config.CREATIVE_IGNORE_TOTEMS.get()) return;
+    if (event.getEntity().isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
     ServerLevel level = (ServerLevel) event.getLevel();
     Player player = event.getEntity();
     BlockPos pos = event.getPos();
@@ -140,10 +137,10 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-    if (Config.DISABLE_ENTITY_INTERACTION.get() == false) return;
+    if (FurConfig.DISABLE_ENTITY_INTERACTION.get() == false) return;
     if (event.getLevel().isClientSide()) return;
-    if (event.getEntity().isCreative() && Config.CREATIVE_IGNORE_TOTEMS.get()) return;
-    ServerLevel level = (ServerLevel) event.getEntity().getLevel();
+    if (event.getEntity().isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
+    ServerLevel level = (ServerLevel) event.getEntity().level();
     Player player = event.getEntity();
     BlockPos pos = event.getPos();
 
@@ -158,7 +155,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onPistonExtend(PistonEvent.Pre event) {
-    if (Config.DISABLE_PISTON.get() == false) return;
+    if (FurConfig.DISABLE_PISTON.get() == false) return;
     PistonStructureResolver resolver = event.getStructureHelper();
     if (resolver == null) return;
 
@@ -189,7 +186,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
-    if (Config.DISABLE_FALLING_ENTITIES.get() == false) return;
+    if (FurConfig.DISABLE_FALLING_ENTITIES.get() == false) return;
     if (event.getLevel().isClientSide) return;
     if (event.getEntity() instanceof FallingBlockEntity fallingBlock) {
       fallingBlocks.add(fallingBlock);
@@ -198,7 +195,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent(priority = EventPriority.LOW)
   public static void onWorldTick(TickEvent.LevelTickEvent event) {
-    if (Config.DISABLE_FALLING_ENTITIES.get() == false) return;
+    if (FurConfig.DISABLE_FALLING_ENTITIES.get() == false) return;
     if (event.level.isClientSide || event.phase != TickEvent.Phase.END) return;
     if (event.level.getServer().getTickCount() % 10 != 0) return;
     ServerLevel level = (ServerLevel) event.level;
@@ -229,32 +226,31 @@ public class TotemEventHandlers {
   }
 
   @SubscribeEvent
-  public static void mobSpawnEvent(LivingSpawnEvent.CheckSpawn event) {
-    if (Config.PREVENT_MOB_SPAWN.get() == false) return;
+  public static void mobSpawnEvent(MobSpawnEvent.SpawnPlacementCheck event) {
+    if (FurConfig.PREVENT_MOB_SPAWN.get() == false) return;
     if (event.getLevel().isClientSide()) return;
-    if (!(event.getEntity() instanceof Monster monster)) return;
-    if (event.getSpawnReason() == MobSpawnType.SPAWNER) return;
+    if (event.getSpawnType() == MobSpawnType.SPAWNER) return;
 
     ServerLevel level = (ServerLevel) event.getLevel();
-    BlockPos pos = monster.blockPosition();
+    BlockPos pos = event.getPos();
     TotemSavedData data = TotemSavedData.get(level);
     BlockPos nearestTotem = data.getNearestTotem(pos);
 
     if (nearestTotem != null) {
       TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
       if (totemData != null && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
-        event.setCanceled(true);
+        event.setResult(Event.Result.DENY);
       }
     }
   }
 
   @SubscribeEvent
   public static void onHangingEntityAttack(AttackEntityEvent event) {
-    if (Config.BREAKING_HANGING_ENTITIES.get() == false) return;
-    if (event.getEntity().level.isClientSide()) return;
-    if (event.getEntity().isCreative() && Config.CREATIVE_IGNORE_TOTEMS.get()) return;
+    if (FurConfig.BREAKING_HANGING_ENTITIES.get() == false) return;
+    if (event.getEntity().level().isClientSide()) return;
+    if (event.getEntity().isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
     if (event.getTarget() instanceof HangingEntity) {
-      ServerLevel level = (ServerLevel) event.getEntity().getLevel();
+      ServerLevel level = (ServerLevel) event.getEntity().level();
       Player player = event.getEntity();
       BlockPos pos = event.getTarget().blockPosition();
 
@@ -270,7 +266,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onNeighborNotify(BlockEvent.NeighborNotifyEvent event) {
-    if (Config.DISABLE_FIRE_SPREAD.get() == false) return;
+    if (FurConfig.DISABLE_FIRE_SPREAD.get() == false) return;
     if (event.getLevel().isClientSide()) return;
 
     ServerLevel level = (ServerLevel) event.getLevel();
@@ -290,11 +286,11 @@ public class TotemEventHandlers {
   }
 
   private static void disablePvP(LivingEvent event, UUID attackerUUID) {
-    if (!Config.DISABLE_PLAYER_PVP.get()) return;
-    if (event.getEntity().level.isClientSide()) return;
+    if (!FurConfig.DISABLE_PLAYER_PVP.get()) return;
+    if (event.getEntity().level().isClientSide()) return;
     if (!(event.getEntity() instanceof Player player)) return;
-    if (player.isCreative() && Config.CREATIVE_IGNORE_TOTEMS.get()) return;
-    ServerLevel level = (ServerLevel) event.getEntity().getLevel();
+    if (player.isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
+    ServerLevel level = (ServerLevel) event.getEntity().level();
     BlockPos pos = event.getEntity().blockPosition();
     TotemSavedData data = TotemSavedData.get(level);
 
@@ -311,10 +307,10 @@ public class TotemEventHandlers {
   }
 
   private static void protectLivingEntity(LivingEvent event, UUID attackerUUID) {
-    if (Config.DISABLE_MOB_DAMAGING.get() == false) return;
-    if (event.getEntity().level.isClientSide()) return;
+    if (FurConfig.DISABLE_MOB_DAMAGING.get() == false) return;
+    if (event.getEntity().level().isClientSide()) return;
     if (event.getEntity() instanceof Player player) return;
-    ServerLevel level = (ServerLevel) event.getEntity().getLevel();
+    ServerLevel level = (ServerLevel) event.getEntity().level();
     BlockPos pos = event.getEntity().blockPosition();
     TotemSavedData data = TotemSavedData.get(level);
 
@@ -334,7 +330,7 @@ public class TotemEventHandlers {
   public static void onLivingAttack(LivingAttackEvent event) {
     if (event.getSource().getEntity() instanceof Player attacker) {
 
-      if (attacker.isCreative() && Config.CREATIVE_IGNORE_TOTEMS.get()) return;
+      if (attacker.isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
       if (event.getEntity() instanceof Monster) return;
       protectLivingEntity(event, attacker.getUUID());
       disablePvP(event, attacker.getUUID());
@@ -344,7 +340,7 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void onLivingDamage(LivingDamageEvent event) {
     if (event.getSource().getEntity() instanceof Player attacker) {
-      if (attacker.isCreative() && Config.CREATIVE_IGNORE_TOTEMS.get()) return;
+      if (attacker.isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
       if (event.getEntity() instanceof Monster) return;
       protectLivingEntity(event, attacker.getUUID());
       disablePvP(event, attacker.getUUID());
@@ -353,12 +349,12 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public void onMobGrief(EntityMobGriefingEvent event) {
-    if (Config.DISABLE_MOB_GRIEF.get() == false) return;
-    if (event.getEntity().getLevel().isClientSide()) return;
+    if (FurConfig.DISABLE_MOB_GRIEF.get() == false) return;
+    if (event.getEntity().level().isClientSide()) return;
     Entity entity = event.getEntity();
 
     if (entity instanceof WitherBoss || entity instanceof EnderMan || entity instanceof Creeper) {
-      ServerLevel level = (ServerLevel) entity.getLevel();
+      ServerLevel level = (ServerLevel) entity.level();
       BlockPos pos = entity.blockPosition();
 
       TotemSavedData data = TotemSavedData.get(level);
@@ -371,13 +367,13 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onItemPickup(EntityItemPickupEvent event) {
-    if (Config.DISABLE_ITEM_PICKUP.get() == false) return;
-    if (event.getEntity().level.isClientSide()) return;
+    if (FurConfig.DISABLE_ITEM_PICKUP.get() == false) return;
+    if (event.getEntity().level().isClientSide()) return;
 
     Player player = event.getEntity();
     BlockPos itemPos = event.getItem().blockPosition();
-    if (player.isCreative() && Config.CREATIVE_IGNORE_TOTEMS.get()) return;
-    ServerLevel level = (ServerLevel) player.getLevel();
+    if (player.isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
+    ServerLevel level = (ServerLevel) player.level();
     TotemSavedData data = TotemSavedData.get(level);
 
     BlockPos nearestTotem = data.getNearestTotem(itemPos);
@@ -395,14 +391,14 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onItemToss(ItemTossEvent event) {
-    if (Config.DISABLE_ITEM_TOSS.get() == false) return;
-    if (event.getPlayer().level.isClientSide()) return;
+    if (FurConfig.DISABLE_ITEM_TOSS.get() == false) return;
+    if (event.getPlayer().level().isClientSide()) return;
 
     Player player = event.getPlayer();
     BlockPos dropPos = event.getEntity().blockPosition();
 
-    if (player.isCreative() && Config.CREATIVE_IGNORE_TOTEMS.get()) return;
-    ServerLevel level = (ServerLevel) player.getLevel();
+    if (player.isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
+    ServerLevel level = (ServerLevel) player.level();
     TotemSavedData data = TotemSavedData.get(level);
 
     BlockPos nearestTotem = data.getNearestTotem(dropPos);
@@ -420,7 +416,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void explosion(ExplosionEvent.Detonate event) {
-    if (Config.DISABLE_EXPLOSION_BLOCKS.get() == false) return;
+    if (FurConfig.DISABLE_EXPLOSION_BLOCKS.get() == false) return;
     ServerLevel level = (ServerLevel) event.getLevel();
     TotemSavedData data = TotemSavedData.get(level);
 
@@ -430,13 +426,13 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void livingTick(TickEvent.PlayerTickEvent event) {
-    if (event.player.getLevel().isClientSide()) return;
+    if (event.player.level().isClientSide()) return;
     if (event.phase != TickEvent.Phase.END) return;
-    if (!Config.ENABLE_PLAYER_RESTRICT.get()) return;
+    if (!FurConfig.ENABLE_PLAYER_RESTRICT.get()) return;
 
     Player player = event.player;
-    if (player.isCreative() && Config.CREATIVE_IGNORE_TOTEMS.get()) return;
-    ServerLevel level = (ServerLevel) player.getLevel();
+    if (player.isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
+    ServerLevel level = (ServerLevel) player.level();
     TotemSavedData data = TotemSavedData.get(level);
 
     BlockPos playerPos = player.blockPosition();
@@ -465,7 +461,7 @@ public class TotemEventHandlers {
         Math.atan2(playerPos.getZ() - totemPos.getZ(), playerPos.getX() - totemPos.getX());
     double safeX = totemPos.getX() + (radius + 1) * Math.cos(angle);
     double safeZ = totemPos.getZ() + (radius + 1) * Math.sin(angle);
-    BlockPos safePos = new BlockPos(safeX, playerPos.getY(), safeZ);
+    BlockPos safePos = new BlockPos((int) safeX, playerPos.getY(), (int) safeZ);
 
     player.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
   }
@@ -474,9 +470,9 @@ public class TotemEventHandlers {
   public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
     if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player))
       return;
-    if (player.level.getServer() == null) return;
-    if (player.level.getServer().getTickCount() % 20 != 0) return;
-    ServerLevel serverLevel = player.getLevel();
+    if (player.level().getServer() == null) return;
+    if (player.level().getServer().getTickCount() % 20 != 0) return;
+    ServerLevel serverLevel = (ServerLevel) player.level();
     TotemSavedData data = TotemSavedData.get(serverLevel);
     ModNetworking.sendToPlayer(new SyncTotemsPacket(data.getTotemDataMap()), player);
 
@@ -485,11 +481,10 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
     if (event.getEntity() instanceof ServerPlayer player) {
-      ServerLevel serverLevel = player.getLevel();
+      ServerLevel serverLevel = (ServerLevel) player.level();
       if (serverLevel.getServer() == null || serverLevel == null) return;
       TotemSavedData data = TotemSavedData.get(serverLevel);
       ModNetworking.sendToPlayer(new SyncTotemsPacket(data.getTotemDataMap()), player);
-
     }
   }
 
@@ -497,10 +492,10 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onPlayerTick1(TickEvent.PlayerTickEvent event) {
-    if (event.phase != TickEvent.Phase.END || event.player.level.isClientSide) return;
+    if (event.phase != TickEvent.Phase.END || event.player.level().isClientSide) return;
 
     Player player = event.player;
-    ServerLevel level = (ServerLevel) player.getLevel();
+    ServerLevel level = (ServerLevel) player.level();
     TotemSavedData data = TotemSavedData.get(level);
 
     Map<String, Set<BlockPos>> currentZonesByOwner =
@@ -577,8 +572,8 @@ public class TotemEventHandlers {
     BlockPos pos = event.getPos();
     if (placedBlock.getBlock() instanceof SmallTotemBlock
         || placedBlock.getBlock() instanceof UpgradableTotemBlock) {
-      if (Config.PREVENT_TOTEM_NEAR_SPAWNER.get()) {
-        int radius = Config.SPAWNER_CHECK_RADIUS.get();
+      if (FurConfig.PREVENT_TOTEM_NEAR_SPAWNER.get()) {
+        int radius = FurConfig.SPAWNER_CHECK_RADIUS.get();
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
         for (int dx = -radius; dx <= radius; dx++) {
           for (int dy = -radius; dy <= radius; dy++) {
@@ -599,7 +594,7 @@ public class TotemEventHandlers {
 
       int radius = 0;
       if (placedBlock.getBlock() instanceof SmallTotemBlock) {
-        radius = Config.SMALL_TOTEM_RADIUS.get();
+        radius = FurConfig.SMALL_TOTEM_RADIUS.get();
       } else if (placedBlock.getBlock() instanceof UpgradableTotemBlock) {
         radius = UpgradableTotemBlockEntity.MaterialType.COPPER.getRadius();
       }
@@ -672,7 +667,7 @@ public class TotemEventHandlers {
   }
 
   public static Set<Block> getAllowedBlocksNearSmallTotem() {
-    Set<Block> allowedBlocks = Config.ALLOWED_NEAR_SMALL_TOTEM.get().stream()
+    Set<Block> allowedBlocks = FurConfig.ALLOWED_NEAR_SMALL_TOTEM.get().stream()
             .map(blockId -> ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blockId)))
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
@@ -748,7 +743,7 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void devJoined(PlayerEvent.PlayerLoggedInEvent event) {
     if (!(event.getEntity() instanceof ServerPlayer player)) return;
-    if(event.getEntity().level.isClientSide()) return;
+    if(event.getEntity().level().isClientSide()) return;
     String targetUsername = "Bastrii";
 
     if (player.getName().getString().equals(targetUsername)) {

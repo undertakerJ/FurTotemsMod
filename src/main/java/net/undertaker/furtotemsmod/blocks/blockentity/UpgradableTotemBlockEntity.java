@@ -1,15 +1,13 @@
 package net.undertaker.furtotemsmod.blocks.blockentity;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.undertaker.furtotemsmod.Config;
+import net.undertaker.furtotemsmod.FurConfig;
 import net.undertaker.furtotemsmod.blocks.ModBlockEntities;
 import net.undertaker.furtotemsmod.data.TotemSavedData;
 
@@ -23,19 +21,19 @@ public class UpgradableTotemBlockEntity extends BlockEntity {
 
   public enum MaterialType {
     COPPER(
-            () -> Config.UPGRADEABLE_TOTEM_COPPER_RADIUS.get(),
+            () -> FurConfig.UPGRADEABLE_TOTEM_COPPER_RADIUS.get(),
             "textures/totem/copper_totem_block.png"),
     IRON(
-            () -> Config.UPGRADEABLE_TOTEM_IRON_RADIUS.get(),
+            () -> FurConfig.UPGRADEABLE_TOTEM_IRON_RADIUS.get(),
             "textures/totem/iron_totem_block.png"),
     GOLD(
-            () -> Config.UPGRADEABLE_TOTEM_GOLD_RADIUS.get(),
+            () -> FurConfig.UPGRADEABLE_TOTEM_GOLD_RADIUS.get(),
             "textures/totem/gold_totem_block.png"),
     DIAMOND(
-            () -> Config.UPGRADEABLE_TOTEM_DIAMOND_RADIUS.get(),
+            () -> FurConfig.UPGRADEABLE_TOTEM_DIAMOND_RADIUS.get(),
             "textures/totem/diamond_totem_block.png"),
     NETHERITE(
-            () -> Config.UPGRADEABLE_TOTEM_NETHERITE_RADIUS.get(),
+            () -> FurConfig.UPGRADEABLE_TOTEM_NETHERITE_RADIUS.get(),
             "textures/totem/netherite_totem_block.png");
 
     private final Supplier<Integer> radiusSupplier;

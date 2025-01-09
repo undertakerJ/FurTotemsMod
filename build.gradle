@@ -61,7 +61,7 @@ minecraft {
         }
 
         data {
-            arg "-mixin.config=${mod_id}.mixins.json"
+          //  arg "-mixin.config=${mod_id}.mixins.json"
             workingDirectory project.file('run-data')
             args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
         }

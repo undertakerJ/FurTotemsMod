@@ -30,5 +30,6 @@
     "recipes": [
       "furtotemsmod:copper_staff_item"
     ]
-  }
+  },
+  "sends_telemetry_event": false
 }

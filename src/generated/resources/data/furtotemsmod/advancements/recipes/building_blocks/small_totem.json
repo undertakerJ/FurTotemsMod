@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_iron_staff_item": {
+    "has_flint": {
       "conditions": {
         "items": [
           {
             "items": [
-              "furtotemsmod:iron_staff_item"
+              "minecraft:flint"
             ]
           }
         ]
@@ -15,20 +15,21 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "furtotemsmod:gold_totemic_empowerment"
+        "recipe": "furtotemsmod:small_totem"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
   },
   "requirements": [
     [
-      "has_iron_staff_item",
+      "has_flint",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "furtotemsmod:gold_totemic_empowerment"
+      "furtotemsmod:small_totem"
     ]
-  }
+  },
+  "sends_telemetry_event": false
 }

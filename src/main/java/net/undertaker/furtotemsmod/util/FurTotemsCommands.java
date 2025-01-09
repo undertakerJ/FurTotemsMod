@@ -91,7 +91,7 @@ public class FurTotemsCommands {
 
     context
         .getSource()
-        .sendSuccess(
+        .sendSuccess(() ->
             Component.literal(
                 "Player "
                     + member.getName().getString()
@@ -106,7 +106,7 @@ public class FurTotemsCommands {
       ServerPlayer player,
       String totemType,
       int amount) {
-    TotemSavedData data = TotemSavedData.get(player.getLevel());
+    TotemSavedData data = TotemSavedData.get(player.serverLevel());
     TotemSavedData.TotemCount count = data.getPlayerTotemCount(player.getUUID());
 
     if (totemType.equalsIgnoreCase("small")) {
@@ -124,7 +124,7 @@ public class FurTotemsCommands {
 
     context
         .getSource()
-        .sendSuccess(
+        .sendSuccess(() ->
             Component.literal(
                 "Set "
                     + totemType
@@ -149,7 +149,7 @@ public class FurTotemsCommands {
 
     context
         .getSource()
-        .sendSuccess(
+        .sendSuccess(() ->
             Component.literal(
                 "Игрок "
                     + member.getName().getString()
@@ -176,7 +176,7 @@ public class FurTotemsCommands {
           data.removeTotem(level, pos);
         });
 
-    source.sendSuccess(
+    source.sendSuccess(() ->
         Component.literal(
             "Removed " + toRemove.size() + " totems for player: " + player.getName().getString()),
         true);

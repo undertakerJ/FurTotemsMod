@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_iron_ingot": {
+    "has_gold_staff_item": {
       "conditions": {
         "items": [
           {
             "items": [
-              "furtotemsmod:iron_totemic_empowerment"
+              "furtotemsmod:gold_staff_item"
             ]
           }
         ]
@@ -15,20 +15,21 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:totem_staff_iron_upgrade"
+        "recipe": "furtotemsmod:diamond_totemic_empowerment"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
   },
   "requirements": [
     [
-      "has_iron_ingot",
+      "has_gold_staff_item",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "minecraft:totem_staff_iron_upgrade"
+      "furtotemsmod:diamond_totemic_empowerment"
     ]
-  }
+  },
+  "sends_telemetry_event": false
 }

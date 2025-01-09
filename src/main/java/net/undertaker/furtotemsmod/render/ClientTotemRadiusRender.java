@@ -48,7 +48,7 @@ public class ClientTotemRadiusRender {
       int radius = entry.getValue().getRadius();
       Level level = mc.level;
       if(level == null) return;
-      if (mc.level.dimension() != player.level.dimension()) return;
+      if (mc.level.dimension() != player.level().dimension()) return;
       renderRadiusParticles(level, pos, radius, player.tickCount);
 
     }

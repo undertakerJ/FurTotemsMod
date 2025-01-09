@@ -7,15 +7,11 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.SpawnerBlock;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.undertaker.furtotemsmod.Config;
 import net.undertaker.furtotemsmod.FurTotemsMod;
 import net.undertaker.furtotemsmod.util.PlacedBlockManager;
 import net.undertaker.furtotemsmod.util.ServerLevelAccessor;
 
-import static net.undertaker.furtotemsmod.util.PlacedBlockManager.placedBlocks;
 import static net.undertaker.furtotemsmod.util.PlacedBlockManager.placedBlocksInZone;
 
 public class TotemSavedData extends SavedData {

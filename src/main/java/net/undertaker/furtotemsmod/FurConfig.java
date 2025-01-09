@@ -9,7 +9,7 @@ import java.util.List;
 // config organized.
 // Demonstrates how to use Forge's config APIs
 @Mod.EventBusSubscriber(modid = FurTotemsMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
-public class Config {
+public class FurConfig {
   public static final ForgeConfigSpec SERVER_CONFIG;
 
   public static final ForgeConfigSpec.BooleanValue ENABLE_BLOCK_BREAK_EVENT;

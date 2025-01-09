@@ -34,7 +34,7 @@ import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.undertaker.furtotemsmod.Config;
+import net.undertaker.furtotemsmod.FurConfig;
 import net.undertaker.furtotemsmod.FurTotemsMod;
 import net.undertaker.furtotemsmod.attributes.ModAttributes;
 import net.undertaker.furtotemsmod.blocks.ModBlocks;
@@ -75,7 +75,7 @@ public class TotemItem extends Item {
   @Override
   public InteractionResult interactLivingEntity(
       ItemStack pStack, Player player, LivingEntity pInteractionTarget, InteractionHand pUsedHand) {
-    Level level = player.getLevel();
+    Level level = player.level();
     BlockPos pos = player.blockPosition();
 
     if (level.isClientSide || player == null) return InteractionResult.FAIL;
@@ -159,7 +159,7 @@ public class TotemItem extends Item {
   }
 
   public static Block getConfiguredBlock() {
-      String blockId = Config.TOTEM_CONSUMED_BLOCK.get();
+      String blockId = FurConfig.TOTEM_CONSUMED_BLOCK.get();
       Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blockId));
       return block != null ? block : Blocks.AIR;
   }
@@ -184,8 +184,8 @@ public class TotemItem extends Item {
       return InteractionResult.FAIL;
     }
 
-    if (Config.PREVENT_TOTEM_NEAR_SPAWNER.get()) {
-      int radius = Config.SPAWNER_CHECK_RADIUS.get();
+    if (FurConfig.PREVENT_TOTEM_NEAR_SPAWNER.get()) {
+      int radius = FurConfig.SPAWNER_CHECK_RADIUS.get();
       BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
       for (int dx = -radius; dx <= radius; dx++) {
         for (int dy = -radius; dy <= radius; dy++) {
@@ -239,7 +239,7 @@ public class TotemItem extends Item {
                   + initialType.name()),
           true);
 
-      if (Config.PLAYER_TOTEM_DEBUFFS.get()) {
+      if (FurConfig.PLAYER_TOTEM_DEBUFFS.get()) {
         player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 20 * 60, 1));
         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20 * 60, 0));
       }

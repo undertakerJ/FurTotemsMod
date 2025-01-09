@@ -30,5 +30,6 @@
     "recipes": [
       "furtotemsmod:iron_totemic_empowerment"
     ]
-  }
+  },
+  "sends_telemetry_event": false
 }

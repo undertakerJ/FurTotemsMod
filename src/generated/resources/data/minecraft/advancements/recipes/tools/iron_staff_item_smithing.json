@@ -1,34 +1,35 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_gold_staff_item": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "minecraft:iron_staff_item_smithing"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_totem": {
       "conditions": {
         "items": [
           {
             "items": [
-              "furtotemsmod:gold_staff_item"
+              "furtotemsmod:copper_staff_item"
             ]
           }
         ]
       },
       "trigger": "minecraft:inventory_changed"
-    },
-    "has_the_recipe": {
-      "conditions": {
-        "recipe": "furtotemsmod:diamond_totemic_empowerment"
-      },
-      "trigger": "minecraft:recipe_unlocked"
     }
   },
   "requirements": [
     [
-      "has_gold_staff_item",
+      "has_totem",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "furtotemsmod:diamond_totemic_empowerment"
+      "minecraft:iron_staff_item_smithing"
     ]
-  }
+  },
+  "sends_telemetry_event": false
 }

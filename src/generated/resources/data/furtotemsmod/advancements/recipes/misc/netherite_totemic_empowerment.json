@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_diamond": {
+    "has_diamond_staff_item": {
       "conditions": {
         "items": [
           {
             "items": [
-              "furtotemsmod:diamond_totemic_empowerment"
+              "furtotemsmod:diamond_staff_item"
             ]
           }
         ]
@@ -15,20 +15,21 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "minecraft:totem_staff_diamond_upgrade"
+        "recipe": "furtotemsmod:netherite_totemic_empowerment"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
   },
   "requirements": [
     [
-      "has_diamond",
+      "has_diamond_staff_item",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "minecraft:totem_staff_diamond_upgrade"
+      "furtotemsmod:netherite_totemic_empowerment"
     ]
-  }
+  },
+  "sends_telemetry_event": false
 }

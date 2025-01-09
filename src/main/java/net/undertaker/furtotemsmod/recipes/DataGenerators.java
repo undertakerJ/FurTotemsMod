@@ -1,6 +1,7 @@
 package net.undertaker.furtotemsmod.recipes;
 
 import net.minecraft.data.DataGenerator;
+import net.minecraft.data.PackOutput;
 import net.minecraftforge.common.data.ExistingFileHelper;
 import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -13,8 +14,9 @@ public class DataGenerators {
     public static void gatherData(GatherDataEvent event){
         DataGenerator dataGenerator = event.getGenerator();
         ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
+        PackOutput packOutput = event.getGenerator().getPackOutput();
 
-    dataGenerator.addProvider(true, new ModRecipesProvider(dataGenerator));
+    dataGenerator.addProvider(true, new ModRecipesProvider(packOutput));
     }
 
 }
