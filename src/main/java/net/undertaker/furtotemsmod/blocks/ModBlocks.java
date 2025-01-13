@@ -34,7 +34,8 @@ public static final RegistryObject<Block> UPGRADABLE_TOTEM =
                   Block.Properties.copy(Blocks.BEDROCK)
                       .strength(2.0F)
                       .noOcclusion()
-                      .explosionResistance(999999)));
+                      .explosionResistance(999999)
+                          .noParticlesOnBreak()));
   public static final RegistryObject<Block> FOX_PLUSHIE =
       BLOCKS.register(
           "white_fox_plushie", () -> new WhiteFoxPlushie(Block.Properties.copy(Blocks.WHITE_WOOL).noOcclusion()));

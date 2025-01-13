@@ -1,7 +1,10 @@
 package net.undertaker.furtotemsmod.util;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.player.Player;
@@ -13,6 +16,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.undertaker.furtotemsmod.FurConfig;
 import net.undertaker.furtotemsmod.FurTotemsMod;
 import net.undertaker.furtotemsmod.blocks.ModBlocks;
@@ -163,7 +167,8 @@ public class PlacedBlockManager {
     ServerLevel level = (ServerLevel) event.getLevel();
     BlockPos pos = event.getPos();
     Block block = event.getPlacedBlock().getBlock();
-
+    Set<Block> blacklistedDecayBlocks = getBlacklistedDecayBlocks();
+    if(blacklistedDecayBlocks.contains(block)) return;
     if (isCorrectBlock(block.defaultBlockState())) {
       TotemSavedData data = TotemSavedData.get(level);
       BlockPos nearestTotem = data.getNearestTotem(pos);
@@ -179,10 +184,17 @@ public class PlacedBlockManager {
           && player.isCreative()) {
         return;
       }
+
+
       addBlock(level, pos, totemData);
     }
   }
-
+  public static Set<Block> getBlacklistedDecayBlocks() {
+      return FurConfig.BLACKLIST_DECAY_BLOCKS.get().stream()
+              .map(blockId -> ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blockId)))
+              .filter(Objects::nonNull)
+              .collect(Collectors.toSet());
+  }
   private static boolean isCorrectBlock(BlockState state) {
     return !state.is(BlockTags.FIRE)
         && !state.is(Blocks.BEEHIVE)

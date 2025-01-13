@@ -50,6 +50,7 @@ public class FurConfig {
 
   public static final ForgeConfigSpec.ConfigValue<String> TOTEM_CONSUMED_BLOCK;
   public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ALLOWED_NEAR_SMALL_TOTEM;
+  public static final ForgeConfigSpec.ConfigValue<List<? extends String>> BLACKLIST_DECAY_BLOCKS;
 
   static {
     ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -60,6 +61,9 @@ public class FurConfig {
     ALLOWED_NEAR_SMALL_TOTEM = builder
             .comment("List of block IDs that can be placed near small totems. Example: 'minecraft:stone'")
             .defineList("allowedNearSmallTotem", List.of("minecraft:crafting_table", "minecraft:furnace", "minecraft:campfire"), obj -> obj instanceof String);
+    BLACKLIST_DECAY_BLOCKS = builder
+            .comment("List of block IDs that can be placed without block decay. Example: 'minecraft:stone'")
+            .defineList("blacklistDecayBlocks", List.of("minecraft:torch","minecraft:spawner"), obj -> obj instanceof String);
     PREVENT_TOTEM_NEAR_SPAWNER = builder
             .comment("Prevent placing Totems near Spawners (default - true)")
             .define("preventTotemNearSpawner", true);

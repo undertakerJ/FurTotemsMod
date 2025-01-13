@@ -231,7 +231,7 @@ public class TotemEventHandlers {
     if (event.getLevel().isClientSide()) return;
     if (event.getSpawnType() == MobSpawnType.SPAWNER) return;
 
-    ServerLevel level = (ServerLevel) event.getLevel();
+    ServerLevel level = event.getLevel().getLevel();
     BlockPos pos = event.getPos();
     TotemSavedData data = TotemSavedData.get(level);
     BlockPos nearestTotem = data.getNearestTotem(pos);

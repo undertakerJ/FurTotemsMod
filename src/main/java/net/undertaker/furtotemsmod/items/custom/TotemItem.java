@@ -39,6 +39,7 @@ import net.undertaker.furtotemsmod.FurTotemsMod;
 import net.undertaker.furtotemsmod.attributes.ModAttributes;
 import net.undertaker.furtotemsmod.blocks.ModBlocks;
 import net.undertaker.furtotemsmod.blocks.blockentity.UpgradableTotemBlockEntity;
+import net.undertaker.furtotemsmod.blocks.custom.UpgradableTotemBlock;
 import net.undertaker.furtotemsmod.data.ClientTotemSavedData;
 import net.undertaker.furtotemsmod.data.TotemSavedData;
 import net.undertaker.furtotemsmod.networking.ModNetworking;
@@ -159,9 +160,9 @@ public class TotemItem extends Item {
   }
 
   public static Block getConfiguredBlock() {
-      String blockId = FurConfig.TOTEM_CONSUMED_BLOCK.get();
-      Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blockId));
-      return block != null ? block : Blocks.AIR;
+    String blockId = FurConfig.TOTEM_CONSUMED_BLOCK.get();
+    Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blockId));
+    return block != null ? block : Blocks.AIR;
   }
 
   private InteractionResult handlePlaceTotem(
@@ -219,7 +220,12 @@ public class TotemItem extends Item {
           Component.translatable("message.furtotemsmod.totem_overlaps_another_zone"), true);
       return InteractionResult.FAIL;
     }
-    BlockState totemBlockState = ModBlocks.UPGRADABLE_TOTEM.get().defaultBlockState();
+
+    BlockState totemBlockState =
+        ModBlocks.UPGRADABLE_TOTEM
+            .get()
+            .defaultBlockState()
+            .setValue(UpgradableTotemBlock.FACING, context.getHorizontalDirection().getOpposite());
 
     level.setBlockAndUpdate(totemPos, totemBlockState);
     if (level.getBlockState(totemPos).is(ModBlocks.UPGRADABLE_TOTEM.get())
@@ -272,7 +278,7 @@ public class TotemItem extends Item {
 
     level.destroyBlock(pos, false);
 
-    data.removeTotem(serverLevel ,pos);
+    data.removeTotem(serverLevel, pos);
 
     player.displayClientMessage(
         Component.translatable("message.furtotemsmod.totem_removed_successfully"), true);
@@ -412,7 +418,7 @@ public class TotemItem extends Item {
 
   @Override
   public void appendHoverText(
-          ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
+      ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
     ClientTotemSavedData clientData = ClientTotemSavedData.get();
     Map<BlockPos, TotemSavedData.TotemData> totemDataMap = clientData.getTotemDataMap();
 
@@ -426,26 +432,27 @@ public class TotemItem extends Item {
       }
 
       tooltip.add(
-              Component.translatable("message.furtotemsmod.mode_description." + currentMode.name())
-                      .withStyle(ChatFormatting.GRAY));
+          Component.translatable("message.furtotemsmod.mode_description." + currentMode.name())
+              .withStyle(ChatFormatting.GRAY));
 
     } else {
       tooltip.add(
-              Component.translatable("message.furtotemsmod.hold_shift_for_details")
-                      .withStyle(ChatFormatting.DARK_GRAY));
+          Component.translatable("message.furtotemsmod.hold_shift_for_details")
+              .withStyle(ChatFormatting.DARK_GRAY));
 
-      long bigTotemCount = totemDataMap.values().stream()
+      long bigTotemCount =
+          totemDataMap.values().stream()
               .filter(data -> "Upgradable".equals(data.getType()))
               .count();
 
       tooltip.add(
-              Component.translatable("message.furtotemsmod.big_totem_count", bigTotemCount)
-                      .withStyle(ChatFormatting.AQUA));
+          Component.translatable("message.furtotemsmod.big_totem_count", bigTotemCount)
+              .withStyle(ChatFormatting.AQUA));
 
       if (!totemDataMap.isEmpty()) {
         tooltip.add(
-                Component.translatable("message.furtotemsmod.totem_locations")
-                        .withStyle(ChatFormatting.GOLD));
+            Component.translatable("message.furtotemsmod.totem_locations")
+                .withStyle(ChatFormatting.GOLD));
         for (Map.Entry<BlockPos, TotemSavedData.TotemData> entry : totemDataMap.entrySet()) {
           if ("Upgradable".equals(entry.getValue().getType())) {
             tooltip.add(Component.literal(entry.getKey().toShortString()));
@@ -453,10 +460,9 @@ public class TotemItem extends Item {
         }
       } else {
         tooltip.add(
-                Component.translatable("message.furtotemsmod.no_totems_found")
-                        .withStyle(ChatFormatting.RED));
+            Component.translatable("message.furtotemsmod.no_totems_found")
+                .withStyle(ChatFormatting.RED));
       }
     }
   }
-
 }

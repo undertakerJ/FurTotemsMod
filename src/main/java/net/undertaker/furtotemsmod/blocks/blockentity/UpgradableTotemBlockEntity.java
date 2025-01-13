@@ -104,8 +104,6 @@ public class UpgradableTotemBlockEntity extends BlockEntity {
     }
   }
 
-
-
   @Override
   public void saveAdditional(CompoundTag tag) {
     super.saveAdditional(tag);
