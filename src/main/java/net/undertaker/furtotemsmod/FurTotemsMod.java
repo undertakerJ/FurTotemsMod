@@ -34,7 +34,7 @@ public class FurTotemsMod {
     MinecraftForge.EVENT_BUS.register(this);
 
     context.registerConfig(
-        ModConfig.Type.SERVER, Config.SERVER_CONFIG, "furtotemsmod-config-server.toml");
+        ModConfig.Type.SERVER, FurConfig.SERVER_CONFIG, "furtotemsmod-config-server.toml");
   }
   public static final Logger LOGGER = LogUtils.getLogger();
   private void commonSetup(final FMLCommonSetupEvent event) {

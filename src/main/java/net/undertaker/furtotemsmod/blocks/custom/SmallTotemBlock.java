@@ -1,25 +1,29 @@
 package net.undertaker.furtotemsmod.blocks.custom;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.BaseEntityBlock;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.undertaker.furtotemsmod.blocks.blockentity.SmallTotemBlockEntity;
 import net.undertaker.furtotemsmod.data.TotemSavedData;
 
 
-public class SmallTotemBlock extends BaseEntityBlock {
+public class SmallTotemBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final int MAX_LIFETIME = 6000;
     public SmallTotemBlock(Properties properties) {
         super(properties);
+        this.registerDefaultState(this.defaultBlockState().setValue(FACING, Direction.NORTH));
     }
     private long placedTime;
 
@@ -29,6 +33,18 @@ public class SmallTotemBlock extends BaseEntityBlock {
     public VoxelShape getShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
         return SHAPE;
     }
+
+    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+    }
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
+        builder.add(FACING);
+    }
+
 
     @Override
     public RenderShape getRenderShape(BlockState pState) {

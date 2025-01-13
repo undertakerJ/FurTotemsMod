@@ -9,7 +9,7 @@ import java.util.List;
 // config organized.
 // Demonstrates how to use Forge's config APIs
 @Mod.EventBusSubscriber(modid = FurTotemsMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
-public class Config {
+public class FurConfig {
   public static final ForgeConfigSpec SERVER_CONFIG;
 
   public static final ForgeConfigSpec.BooleanValue ENABLE_BLOCK_BREAK_EVENT;
@@ -50,6 +50,7 @@ public class Config {
 
   public static final ForgeConfigSpec.ConfigValue<String> TOTEM_CONSUMED_BLOCK;
   public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ALLOWED_NEAR_SMALL_TOTEM;
+  public static final ForgeConfigSpec.ConfigValue<List<? extends String>> BLACKLIST_DECAY_BLOCKS;
 
   static {
     ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -57,6 +58,9 @@ public class Config {
     TOTEM_CONSUMED_BLOCK = builder
             .comment("The block ID required to place a Totem. Example: 'minecraft:copper_block'")
             .define("totemConsumedBlock", "minecraft:copper_block");
+    BLACKLIST_DECAY_BLOCKS = builder
+            .comment("List of block IDs that can be placed without block decay. Example: 'minecraft:stone'")
+            .defineList("blacklistDecayBlocks", List.of("minecraft:torch","minecraft:spawner"), obj -> obj instanceof String);
     ALLOWED_NEAR_SMALL_TOTEM = builder
             .comment("List of block IDs that can be placed near small totems. Example: 'minecraft:stone'")
             .defineList("allowedNearSmallTotem", List.of("minecraft:crafting_table", "minecraft:furnace", "minecraft:campfire"), obj -> obj instanceof String);

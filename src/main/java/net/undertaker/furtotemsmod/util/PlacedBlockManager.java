@@ -1,7 +1,10 @@
 package net.undertaker.furtotemsmod.util;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.player.Player;
@@ -13,7 +16,8 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.undertaker.furtotemsmod.Config;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.undertaker.furtotemsmod.FurConfig;
 import net.undertaker.furtotemsmod.FurTotemsMod;
 import net.undertaker.furtotemsmod.blocks.ModBlocks;
 import net.undertaker.furtotemsmod.data.TotemSavedData;
@@ -27,7 +31,7 @@ public class PlacedBlockManager {
   public static void addBlock(Level level, BlockPos pos, TotemSavedData.TotemData totemData) {
     long gameTime = level.getGameTime();
     if (totemData != null) {
-      if (Config.BLOCK_DESTROY_IN_ZONE.get()) {
+      if (FurConfig.BLOCK_DESTROY_IN_ZONE.get()) {
         placedBlocksInZone.put(pos, totemData);
       }
     } else {
@@ -39,7 +43,7 @@ public class PlacedBlockManager {
     long currentTime = level.getGameTime();
     List<BlockPos> toRemove = new ArrayList<>();
 
-    int breakDelay = Config.BLOCK_BREAK_DELAY.get() * 20;
+    int breakDelay = FurConfig.BLOCK_BREAK_DELAY.get() * 20;
 
     for (Map.Entry<BlockPos, Long> entry : placedBlocks.entrySet()) {
       BlockPos pos = entry.getKey();
@@ -76,7 +80,7 @@ public class PlacedBlockManager {
   }
 
   public static void onTotemDestroyed(ServerLevel level, TotemSavedData.TotemData totemData) {
-    if (!Config.BLOCK_DESTROY_IN_ZONE.get()) return;
+    if (!FurConfig.BLOCK_DESTROY_IN_ZONE.get()) return;
 
     List<BlockPos> toDestroy = new ArrayList<>();
     Map<BlockPos, UUID> blockTaskMap = new HashMap<>();
@@ -93,7 +97,7 @@ public class PlacedBlockManager {
     for (BlockPos pos : toDestroy) {
       BlockState blockState = level.getBlockState(pos);
       if (!blockState.isAir()) {
-        int delayTicks = Config.DELAY_BLOCK_DESTROY_IN_ZONE.get() * 20;
+        int delayTicks = FurConfig.DELAY_BLOCK_DESTROY_IN_ZONE.get() * 20;
 
         UUID taskId = UUID.randomUUID();
         blockTaskMap.put(pos, taskId);
@@ -163,7 +167,8 @@ public class PlacedBlockManager {
     ServerLevel level = (ServerLevel) event.getLevel();
     BlockPos pos = event.getPos();
     Block block = event.getPlacedBlock().getBlock();
-
+    Set<Block> blacklistedDecayBlocks = getBlacklistedDecayBlocks();
+    if(blacklistedDecayBlocks.contains(block)) return;
     if (isCorrectBlock(block.defaultBlockState())) {
       TotemSavedData data = TotemSavedData.get(level);
       BlockPos nearestTotem = data.getNearestTotem(pos);
@@ -174,7 +179,7 @@ public class PlacedBlockManager {
                       <= Math.pow(data.getTotemData(nearestTotem).getRadius(), 2)
               ? data.getTotemData(nearestTotem)
               : null;
-      if (Config.CREATIVE_IGNORE_TOTEMS.get()
+      if (FurConfig.CREATIVE_IGNORE_TOTEMS.get()
           && event.getEntity() instanceof Player player
           && player.isCreative()) {
         return;
@@ -182,7 +187,12 @@ public class PlacedBlockManager {
       addBlock(level, pos, totemData);
     }
   }
-
+  public static Set<Block> getBlacklistedDecayBlocks() {
+    return FurConfig.BLACKLIST_DECAY_BLOCKS.get().stream()
+            .map(blockId -> ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blockId)))
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+  }
   private static boolean isCorrectBlock(BlockState state) {
     return !state.is(BlockTags.FIRE)
         && !state.is(Blocks.BEEHIVE)

@@ -203,7 +203,7 @@
 [08янв.2025 10:47:26.519] [modloading-worker-0/DEBUG] [net.minecraftforge.fml.config.ConfigTracker/CONFIG]: Config file furtotemsmod-config-server.toml for furtotemsmod tracking
 [08янв.2025 10:47:26.521] [modloading-worker-0/DEBUG] [net.minecraftforge.fml.javafmlmod.AutomaticEventSubscriber/LOADING]: Attempting to inject @EventBusSubscriber classes into the eventbus for furtotemsmod
 [08янв.2025 10:47:26.527] [modloading-worker-0/DEBUG] [net.minecraftforge.fml.javafmlmod.AutomaticEventSubscriber/LOADING]: Auto-subscribing net.undertaker.furtotemsmod.attributes.ModAttributes to MOD
-[08янв.2025 10:47:26.532] [modloading-worker-0/DEBUG] [net.minecraftforge.fml.javafmlmod.AutomaticEventSubscriber/LOADING]: Auto-subscribing net.undertaker.furtotemsmod.Config to MOD
+[08янв.2025 10:47:26.532] [modloading-worker-0/DEBUG] [net.minecraftforge.fml.javafmlmod.AutomaticEventSubscriber/LOADING]: Auto-subscribing net.undertaker.furtotemsmod.FurConfig to MOD
 [08янв.2025 10:47:26.532] [modloading-worker-0/DEBUG] [net.minecraftforge.fml.javafmlmod.AutomaticEventSubscriber/LOADING]: Auto-subscribing net.undertaker.furtotemsmod.items.custom.TotemItem to FORGE
 [08янв.2025 10:47:26.556] [modloading-worker-0/DEBUG] [net.minecraftforge.fml.javafmlmod.AutomaticEventSubscriber/LOADING]: Auto-subscribing net.undertaker.furtotemsmod.recipes.DataGenerators to MOD
 [08янв.2025 10:47:26.562] [modloading-worker-0/DEBUG] [net.minecraftforge.fml.javafmlmod.AutomaticEventSubscriber/LOADING]: Auto-subscribing net.undertaker.furtotemsmod.render.ClientModEvents to MOD

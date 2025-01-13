@@ -63,7 +63,7 @@
   "message.furtotemsmod.mode_changed": "Mode changed to: ",
   "message.furtotemsmod.reached_large_totem_limit": "You've reached the maximum amount of Major Totems.",
   "message.furtotemsmod.staff_does_not_match_any_material": "The staff does not match any material!",
-  "message.furtotemsmod.missing_required_block": "You are missing the required item: ",
+  "message.furtotemsmod.missing_required_block": "You are missing the required item/block in inventory: ",
   "message.furtotemsmod.totem_set_with_level": "Totem set with level: ",
   "message.furtotemsmod.failed_to_place_totem": "Failed to place Totem!",
   "message.furtotemsmod.no_totem_to_remove": "There isn't a totem to remove here.",

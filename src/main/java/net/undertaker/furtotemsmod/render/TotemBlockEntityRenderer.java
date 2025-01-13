@@ -2,17 +2,20 @@ package net.undertaker.furtotemsmod.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Quaternion;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BeaconRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import net.undertaker.furtotemsmod.FurTotemsMod;
 import net.undertaker.furtotemsmod.blocks.blockentity.UpgradableTotemBlockEntity;
 import net.undertaker.furtotemsmod.blocks.blockentity.model.UpgradableTotemModel;
+import net.undertaker.furtotemsmod.blocks.custom.UpgradableTotemBlock;
 import net.undertaker.furtotemsmod.items.custom.TotemItem;
 
 
@@ -28,10 +31,16 @@ public class TotemBlockEntityRenderer implements BlockEntityRenderer<UpgradableT
     if (Minecraft.getInstance().player == null) return;
       UpgradableTotemBlockEntity.MaterialType materialType = upgradableTotemBlockEntity.getMaterialType();
       ResourceLocation texture = new ResourceLocation(FurTotemsMod.MOD_ID, materialType.getTexture());
-
+     Direction facing = upgradableTotemBlockEntity.getBlockState().getValue(UpgradableTotemBlock.FACING);
       poseStack.pushPose();
       poseStack.translate(0.5, 1.5, 0.5);
       poseStack.scale(-1.0F, -1.0F, 1.0F);
+    switch (facing) {
+      case SOUTH -> poseStack.mulPose(new Quaternion(0, 180, 0, true));
+      case WEST -> poseStack.mulPose(new Quaternion(0, 90, 0, true));
+      case EAST -> poseStack.mulPose(new Quaternion(0, -90, 0, true));
+      default -> {}
+    }
       VertexConsumer vertexConsumer = multiBufferSource.getBuffer(RenderType.entityCutout(texture));
       model.renderToBuffer(poseStack, vertexConsumer, i, i1, 1.0F, 1.0F, 1.0F, 1.0F);
       poseStack.popPose();
