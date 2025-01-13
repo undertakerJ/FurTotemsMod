@@ -1,14 +1,9 @@
 package net.undertaker.furtotemsmod.blocks.custom;
 
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.particles.BlockParticleOption;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -75,7 +70,7 @@ public class UpgradableTotemBlock extends HorizontalDirectionalBlock implements 
         totemEntity.setOwner(null);
       }
       if (totemEntity.getMaterialType() == null) {
-        totemEntity.upgrade(UpgradableTotemBlockEntity.MaterialType.COPPER);
+        totemEntity.upgrade(UpgradableTotemBlockEntity.MaterialType.COPPER_BLOCK);
       }
       totemEntity.setChanged();
     }
@@ -108,17 +103,17 @@ public class UpgradableTotemBlock extends HorizontalDirectionalBlock implements 
 
   private UpgradableTotemBlockEntity.MaterialType getMaxUpgradeTypeForStaff(TotemItem staff) {
     if (staff == ModItems.COPPER_STAFF_ITEM.get()) {
-      return UpgradableTotemBlockEntity.MaterialType.COPPER;
+      return UpgradableTotemBlockEntity.MaterialType.COPPER_BLOCK;
     } else if (staff == ModItems.IRON_STAFF_ITEM.get()) {
-      return UpgradableTotemBlockEntity.MaterialType.IRON;
+      return UpgradableTotemBlockEntity.MaterialType.IRON_BLOCK;
     } else if (staff == ModItems.GOLD_STAFF_ITEM.get()) {
-      return UpgradableTotemBlockEntity.MaterialType.GOLD;
+      return UpgradableTotemBlockEntity.MaterialType.GOLD_BLOCK;
     } else if (staff == ModItems.DIAMOND_STAFF_ITEM.get()) {
-      return UpgradableTotemBlockEntity.MaterialType.DIAMOND;
+      return UpgradableTotemBlockEntity.MaterialType.DIAMOND_BLOCK;
     } else if (staff == ModItems.NETHERITE_STAFF_ITEM.get()) {
-      return UpgradableTotemBlockEntity.MaterialType.NETHERITE;
+      return UpgradableTotemBlockEntity.MaterialType.NETHERITE_BLOCK;
     }
-    return UpgradableTotemBlockEntity.MaterialType.COPPER;
+    return UpgradableTotemBlockEntity.MaterialType.COPPER_BLOCK;
   }
 
   @Override
@@ -138,7 +133,7 @@ public class UpgradableTotemBlock extends HorizontalDirectionalBlock implements 
     UpgradableTotemBlockEntity.MaterialType nextType;
 
     if (currentType.ordinal() >= maxType.ordinal()) {
-      nextType = UpgradableTotemBlockEntity.MaterialType.COPPER;
+      nextType = UpgradableTotemBlockEntity.MaterialType.COPPER_BLOCK;
     } else {
       nextType = UpgradableTotemBlockEntity.MaterialType.values()[currentType.ordinal() + 1];
     }

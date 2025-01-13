@@ -596,7 +596,7 @@ public class TotemEventHandlers {
       if (placedBlock.getBlock() instanceof SmallTotemBlock) {
         radius = FurConfig.SMALL_TOTEM_RADIUS.get();
       } else if (placedBlock.getBlock() instanceof UpgradableTotemBlock) {
-        radius = UpgradableTotemBlockEntity.MaterialType.COPPER.getRadius();
+        radius = UpgradableTotemBlockEntity.MaterialType.COPPER_BLOCK.getRadius();
       }
       if (data.isOverlapping(pos, radius, player.getUUID())) {
         event.setCanceled(true);

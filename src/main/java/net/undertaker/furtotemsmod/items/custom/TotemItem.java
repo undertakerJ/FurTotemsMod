@@ -203,7 +203,7 @@ public class TotemItem extends Item {
     }
 
     UpgradableTotemBlockEntity.MaterialType initialType =
-        UpgradableTotemBlockEntity.MaterialType.COPPER;
+        UpgradableTotemBlockEntity.MaterialType.COPPER_BLOCK;
     Block requiredBlock = getConfiguredBlock();
     if (!player.getInventory().contains(requiredBlock.asItem().getDefaultInstance())) {
       player.displayClientMessage(
