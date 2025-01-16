@@ -156,6 +156,7 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void onPistonExtend(PistonEvent.Pre event) {
     if (FurConfig.DISABLE_PISTON.get() == false) return;
+    if(event.getLevel().isClientSide()) return;
     PistonStructureResolver resolver = event.getStructureHelper();
     if (resolver == null) return;
 
@@ -329,6 +330,7 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void onLivingAttack(LivingAttackEvent event) {
     if (event.getSource().getEntity() instanceof Player attacker) {
+      if(event.getEntity().level().isClientSide) return;
 
       if (attacker.isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
       if (event.getEntity() instanceof Monster) return;
@@ -340,6 +342,7 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void onLivingDamage(LivingDamageEvent event) {
     if (event.getSource().getEntity() instanceof Player attacker) {
+      if(event.getEntity().level().isClientSide) return;
       if (attacker.isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
       if (event.getEntity() instanceof Monster) return;
       protectLivingEntity(event, attacker.getUUID());
@@ -417,6 +420,7 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void explosion(ExplosionEvent.Detonate event) {
     if (FurConfig.DISABLE_EXPLOSION_BLOCKS.get() == false) return;
+    if(event.getLevel().isClientSide()) return;
     ServerLevel level = (ServerLevel) event.getLevel();
     TotemSavedData data = TotemSavedData.get(level);
 
@@ -468,6 +472,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+    if(event.player.level().isClientSide()) return;
     if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player))
       return;
     if (player.level().getServer() == null) return;
@@ -480,6 +485,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
+    if(event.getEntity().level().isClientSide()) return;
     if (event.getEntity() instanceof ServerPlayer player) {
       ServerLevel serverLevel = (ServerLevel) player.level();
       if (serverLevel.getServer() == null || serverLevel == null) return;
@@ -625,9 +631,7 @@ public class TotemEventHandlers {
 
         UpgradableTotemBlockEntity totemEntity =
             (UpgradableTotemBlockEntity) serverLevel.getBlockEntity(pos);
-        if (totemEntity != null) {
-          // data.addTotem(pos, player.getUUID(), totemEntity.getRadius(), "Upgradable");
-        }
+
       }
     }
   }
