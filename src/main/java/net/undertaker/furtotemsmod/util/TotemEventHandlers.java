@@ -155,6 +155,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onPistonExtend(PistonEvent.Pre event) {
+    if(event.getLevel().isClientSide()) return;
     if (FurConfig.DISABLE_PISTON.get() == false) return;
     PistonStructureResolver resolver = event.getStructureHelper();
     if (resolver == null) return;
@@ -329,6 +330,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onLivingAttack(LivingAttackEvent event) {
+    if(event.getEntity().level.isClientSide()) return;
     if (event.getSource().getEntity() instanceof Player attacker) {
 
       if (attacker.isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
@@ -340,6 +342,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onLivingDamage(LivingDamageEvent event) {
+    if(event.getEntity().level.isClientSide()) return;
     if (event.getSource().getEntity() instanceof Player attacker) {
       if (attacker.isCreative() && FurConfig.CREATIVE_IGNORE_TOTEMS.get()) return;
       if (event.getEntity() instanceof Monster) return;
@@ -418,8 +421,9 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void explosion(ExplosionEvent.Detonate event) {
     if (FurConfig.DISABLE_EXPLOSION_BLOCKS.get() == false) return;
-    ServerLevel level = (ServerLevel) event.getLevel();
-    TotemSavedData data = TotemSavedData.get(level);
+    if (event.getLevel().isClientSide()) return;
+    ServerLevel serverLevel = (ServerLevel) event.getLevel();
+    TotemSavedData data = TotemSavedData.get(serverLevel);
 
     List<BlockPos> explosionBlocks = event.getExplosion().getToBlow();
     explosionBlocks.removeIf(pos -> data.getNearestTotem(pos) != null);
@@ -469,6 +473,7 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+    if(event.player.level.isClientSide()) return;
     if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player))
       return;
     if (player.level.getServer() == null) return;
