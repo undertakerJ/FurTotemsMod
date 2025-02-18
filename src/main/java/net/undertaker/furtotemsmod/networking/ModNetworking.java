@@ -46,7 +46,7 @@ public class ModNetworking {
         .messageBuilder(SyncTotemMaterialPacket.class, 3)
         .encoder(SyncTotemMaterialPacket::encode)
         .decoder(SyncTotemMaterialPacket::decode)
-        .consumerMainThread(SyncTotemMaterialPacket::handle)
+        .consumerMainThread(SyncTotemMaterialPacket::receive)
         .add();
 
   }

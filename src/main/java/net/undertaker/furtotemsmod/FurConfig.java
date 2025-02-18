@@ -51,13 +51,19 @@ public class FurConfig {
   public static final ForgeConfigSpec.ConfigValue<String> TOTEM_CONSUMED_BLOCK;
   public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ALLOWED_NEAR_SMALL_TOTEM;
   public static final ForgeConfigSpec.ConfigValue<List<? extends String>> BLACKLIST_DECAY_BLOCKS;
+  public static final ForgeConfigSpec.ConfigValue<List<? extends String>> DISABLE_BLOCK_BREAK_DIMENSIONS;
 
   static {
     ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
     builder.push("events");
+
     TOTEM_CONSUMED_BLOCK = builder
             .comment("The block ID required to place a Totem. Example: 'minecraft:copper_block'")
             .define("totemConsumedBlock", "minecraft:copper_block");
+
+    DISABLE_BLOCK_BREAK_DIMENSIONS = builder
+            .comment("List of dimension IDs that ignore block breaking. Example: \"minecraft:nether\"")
+            .defineList("disableBlockBreakDimensions", List.of(), obj -> obj instanceof String);
     BLACKLIST_DECAY_BLOCKS = builder
             .comment("List of block IDs that can be placed without block decay. Example: 'minecraft:stone'")
             .defineList("blacklistDecayBlocks", List.of("minecraft:torch","minecraft:spawner"), obj -> obj instanceof String);

@@ -742,6 +742,7 @@ public class TotemEventHandlers {
                 FurTotemsMod.LOGGER.info(
                     "Загружен тотем на позиции {} с владельцем {}", pos, totemData.getOwner());
               });
+      PlacedBlockManager.restoreDelayedTasks(serverLevel);
     }
   }
 

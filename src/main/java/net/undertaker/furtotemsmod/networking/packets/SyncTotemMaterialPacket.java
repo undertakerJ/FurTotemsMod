@@ -4,6 +4,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 import net.undertaker.furtotemsmod.blocks.blockentity.UpgradableTotemBlockEntity;
 
@@ -28,14 +31,19 @@ public class SyncTotemMaterialPacket {private final BlockPos pos;
                 UpgradableTotemBlockEntity.MaterialType.values()[buf.readInt()];
         return new SyncTotemMaterialPacket(pos, materialType);
     }
+  public static void receive(
+          SyncTotemMaterialPacket packet, Supplier<NetworkEvent.Context> ctxSupplier) {
+    NetworkEvent.Context ctx = ctxSupplier.get();
+    ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> handle(packet)));
+    ctx.setPacketHandled(true);
+  }
 
-    public static void handle(SyncTotemMaterialPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        contextSupplier.get().enqueueWork(() -> {
-            Level level = Minecraft.getInstance().level;
-            if (level != null && level.getBlockEntity(packet.pos) instanceof UpgradableTotemBlockEntity totemEntity) {
-                totemEntity.setMaterialType(packet.materialType);
-            }
-        });
-        contextSupplier.get().setPacketHandled(true);
+  @OnlyIn(Dist.CLIENT)
+  public static void handle(SyncTotemMaterialPacket packet) {
+    Level level = Minecraft.getInstance().level;
+    if (level != null
+            && level.getBlockEntity(packet.pos) instanceof UpgradableTotemBlockEntity totemEntity) {
+      totemEntity.setMaterialType(packet.materialType);
     }
+  }
 }
