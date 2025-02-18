@@ -32,7 +32,6 @@ public class TotemBlockEntityRenderer implements BlockEntityRenderer<UpgradableT
       UpgradableTotemBlockEntity.MaterialType materialType = upgradableTotemBlockEntity.getMaterialType();
       ResourceLocation texture = new ResourceLocation(FurTotemsMod.MOD_ID, materialType.getTexture());
       Direction facing = upgradableTotemBlockEntity.getBlockState().getValue(UpgradableTotemBlock.FACING);
-      System.out.println("Block Entity Facing: " + facing);
       poseStack.pushPose();
       poseStack.translate(0.5, 1.5, 0.5);
       poseStack.scale(-1.0F, -1.0F, 1.0F);

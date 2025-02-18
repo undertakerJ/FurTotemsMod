@@ -7,16 +7,19 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.undertaker.furtotemsmod.FurTotemsMod;
+import net.undertaker.furtotemsmod.util.BlockInZoneEntry;
 import net.undertaker.furtotemsmod.util.PlacedBlockManager;
 import net.undertaker.furtotemsmod.util.ServerLevelAccessor;
-
-import static net.undertaker.furtotemsmod.util.PlacedBlockManager.placedBlocksInZone;
 
 public class TotemSavedData extends SavedData {
   private final Map<BlockPos, TotemData> totemDataMap = new HashMap<>();
   private final Map<UUID, TotemCount> totemsPerPlayer = new HashMap<>();
+
+  public final Map<BlockPos, Long> placedBlocks = new HashMap<>();
+  public final Map<BlockPos, BlockInZoneEntry> placedBlocksInZone = new HashMap<>();
 
   public static class TotemData {
     private final UUID owner;
@@ -218,7 +221,7 @@ public class TotemSavedData extends SavedData {
     }
     for (BlockPos blockPos : placedBlocksInZone.keySet()) {
       if (blockPos.distSqr(pos) <= Math.pow(radius, 2)) {
-        placedBlocksInZone.put(blockPos, newTotem);
+        addBlockInZone(blockPos, new BlockInZoneEntry(newTotem, level.getGameTime()));
         System.out.println("Блок " + blockPos + " возвращён в зону нового тотема.");
       }
     }
@@ -240,7 +243,30 @@ public class TotemSavedData extends SavedData {
     }
   }
 
+  public static class BlockInZoneEntry {
+    public final TotemData totemData;
+    public final long placedTime;
+    public BlockInZoneEntry(TotemData totemData, long placedTime) {
+      this.totemData = totemData;
+      this.placedTime = placedTime;
+    }
+  }
 
+  public void addBlockInZone(BlockPos pos, BlockInZoneEntry entry) {
+    this.placedBlocksInZone.put(pos, entry);
+  }
+
+  public void addBlock(BlockPos pos, long time) {
+    this.placedBlocks.put(pos, time);
+  }
+
+  public Map<BlockPos, Long> getPlacedBlocks() {
+    return placedBlocks;
+  }
+
+  public Map<BlockPos, BlockInZoneEntry> getPlacedBlocksInZone() {
+    return placedBlocksInZone;
+  }
 
   public List<BlockPos> getAllTotemsOwnedBy(UUID ownerUUID) {
     List<BlockPos> ownedTotems = new ArrayList<>();
@@ -340,6 +366,25 @@ public class TotemSavedData extends SavedData {
       data.totemsPerPlayer.put(player, count);
     }
 
+    ListTag placedList = tag.getList("PlacedBlocks", Tag.TAG_COMPOUND);
+    for (int i = 0; i < placedList.size(); i++) {
+      CompoundTag blockTag = placedList.getCompound(i);
+      BlockPos pos = new BlockPos(blockTag.getInt("X"), blockTag.getInt("Y"), blockTag.getInt("Z"));
+      long time = blockTag.getLong("Time");
+      data.placedBlocks.put(pos, time);
+    }
+
+    ListTag placedInZoneList = tag.getList("PlacedBlocksInZone", Tag.TAG_COMPOUND);
+    for (int i = 0; i < placedInZoneList.size(); i++) {
+      CompoundTag blockTag = placedInZoneList.getCompound(i);
+      BlockPos pos = new BlockPos(blockTag.getInt("X"), blockTag.getInt("Y"), blockTag.getInt("Z"));
+      UUID owner = blockTag.getUUID("Owner");
+      int radius = blockTag.getInt("Radius");
+      String type = blockTag.getString("Type");
+      long time = blockTag.getLong("Time");
+      data.placedBlocksInZone.put(pos, new BlockInZoneEntry(new TotemData(owner, radius, type), time));
+    }
+
     return data;
   }
 
@@ -370,6 +415,34 @@ public class TotemSavedData extends SavedData {
       playerCounts.put(player.toString(), countsTag);
     }
     tag.put("PlayerCounts", playerCounts);
+
+    ListTag placedList = new ListTag();
+    for (Map.Entry<BlockPos, Long> entry : placedBlocks.entrySet()) {
+      CompoundTag blockTag = new CompoundTag();
+      BlockPos pos = entry.getKey();
+      blockTag.putInt("X", pos.getX());
+      blockTag.putInt("Y", pos.getY());
+      blockTag.putInt("Z", pos.getZ());
+      blockTag.putLong("Time", entry.getValue());
+      placedList.add(blockTag);
+    }
+    tag.put("PlacedBlocks", placedList);
+
+    ListTag placedInZoneList = new ListTag();
+    for (Map.Entry<BlockPos, BlockInZoneEntry> entry : placedBlocksInZone.entrySet()) {
+      CompoundTag blockTag = new CompoundTag();
+      BlockPos pos = entry.getKey();
+      BlockInZoneEntry bze = entry.getValue();
+      blockTag.putInt("X", pos.getX());
+      blockTag.putInt("Y", pos.getY());
+      blockTag.putInt("Z", pos.getZ());
+      blockTag.putUUID("Owner", bze.totemData.getOwner());
+      blockTag.putInt("Radius", bze.totemData.getRadius());
+      blockTag.putString("Type", bze.totemData.getType());
+      blockTag.putLong("Time", bze.placedTime);
+      placedInZoneList.add(blockTag);
+    }
+    tag.put("PlacedBlocksInZone", placedInZoneList);
 
     return tag;
   }

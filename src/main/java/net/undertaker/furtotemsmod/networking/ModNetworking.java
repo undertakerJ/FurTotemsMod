@@ -23,7 +23,7 @@ public class ModNetworking {
   public static void register() {
     SimpleChannel net =
         NetworkRegistry.ChannelBuilder.named(new ResourceLocation(FurTotemsMod.MOD_ID, "messages"))
-            .networkProtocolVersion(() -> "1.2")
+            .networkProtocolVersion(() -> "1.3")
             .clientAcceptedVersions(s -> true)
             .serverAcceptedVersions(s -> true)
             .simpleChannel();
@@ -46,7 +46,7 @@ public class ModNetworking {
         .messageBuilder(SyncTotemMaterialPacket.class, 3)
         .encoder(SyncTotemMaterialPacket::encode)
         .decoder(SyncTotemMaterialPacket::decode)
-        .consumerMainThread(SyncTotemMaterialPacket::handle)
+        .consumerMainThread(SyncTotemMaterialPacket::receive)
         .add();
 
   }

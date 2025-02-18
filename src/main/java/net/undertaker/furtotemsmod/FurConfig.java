@@ -40,6 +40,8 @@ public class FurConfig {
 
   public static final ForgeConfigSpec.IntValue DELAY_BLOCK_DESTROY_IN_ZONE;
 
+
+
   public static final ForgeConfigSpec.IntValue UPGRADEABLE_TOTEM_COPPER_RADIUS;
   public static final ForgeConfigSpec.IntValue UPGRADEABLE_TOTEM_IRON_RADIUS;
   public static final ForgeConfigSpec.IntValue UPGRADEABLE_TOTEM_GOLD_RADIUS;
@@ -51,6 +53,7 @@ public class FurConfig {
   public static final ForgeConfigSpec.ConfigValue<String> TOTEM_CONSUMED_BLOCK;
   public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ALLOWED_NEAR_SMALL_TOTEM;
   public static final ForgeConfigSpec.ConfigValue<List<? extends String>> BLACKLIST_DECAY_BLOCKS;
+  public static final ForgeConfigSpec.ConfigValue<List<? extends String>> DISABLE_BLOCK_BREAK_DIMENSIONS;
 
   static {
     ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -58,6 +61,10 @@ public class FurConfig {
     TOTEM_CONSUMED_BLOCK = builder
             .comment("The block ID required to place a Totem. Example: 'minecraft:copper_block'")
             .define("totemConsumedBlock", "minecraft:copper_block");
+    DISABLE_BLOCK_BREAK_DIMENSIONS = builder
+            .comment("List of dimension IDs that ignore block breaking. Example: \"minecraft:nether\"")
+            .defineList("disableBlockBreakDimensions", List.of(), obj -> obj instanceof String);
+
     ALLOWED_NEAR_SMALL_TOTEM = builder
             .comment("List of block IDs that can be placed near small totems. Example: 'minecraft:stone'")
             .defineList("allowedNearSmallTotem", List.of("minecraft:crafting_table", "minecraft:furnace", "minecraft:campfire"), obj -> obj instanceof String);
