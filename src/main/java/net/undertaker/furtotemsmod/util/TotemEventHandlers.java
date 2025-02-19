@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
@@ -228,12 +229,13 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void mobSpawnEvent(LivingSpawnEvent.CheckSpawn event) {
-    if (FurConfig.PREVENT_MOB_SPAWN.get() == false) return;
-    if (event.getLevel().isClientSide()) return;
+    if (!FurConfig.PREVENT_MOB_SPAWN.get()) return;
+    // Если уровень – генерация чанка, пропускаем событие
+    if (event.getLevel() instanceof WorldGenRegion) return;
     if (!(event.getEntity() instanceof Monster monster)) return;
+    if (!(event.getLevel() instanceof ServerLevel level)) return;
     if (event.getSpawnReason() == MobSpawnType.SPAWNER) return;
 
-    ServerLevel level = (ServerLevel) event.getLevel();
     BlockPos pos = monster.blockPosition();
     TotemSavedData data = TotemSavedData.get(level);
     BlockPos nearestTotem = data.getNearestTotem(pos);
@@ -743,31 +745,6 @@ public class TotemEventHandlers {
                     "Загружен тотем на позиции {} с владельцем {}", pos, totemData.getOwner());
               });
       PlacedBlockManager.restoreDelayedTasks(serverLevel);
-    }
-  }
-
-  private static final String ITEM_GRANTED_KEY = "item_granted";
-
-  @SubscribeEvent
-  public static void devJoined(PlayerEvent.PlayerLoggedInEvent event) {
-    if (!(event.getEntity() instanceof ServerPlayer player)) return;
-    if(event.getEntity().level.isClientSide()) return;
-    String targetUsername = "Bastrii";
-
-    if (player.getName().getString().equals(targetUsername)) {
-      CompoundTag persistentData = player.getPersistentData();
-
-      if (persistentData.getBoolean(ITEM_GRANTED_KEY)) {
-        return;
-      }
-
-      ItemStack item = new ItemStack(ModItems.WHITE_FOX_PLUSHIE.get());
-      if (!player.getInventory().add(item)) {
-        player.drop(item, false);
-      }
-
-      persistentData.putBoolean(ITEM_GRANTED_KEY, true);
-      player.sendSystemMessage(Component.translatable("message.furtotemsmod.item_granted").withStyle(ChatFormatting.AQUA));
     }
   }
 
