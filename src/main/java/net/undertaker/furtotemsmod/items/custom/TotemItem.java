@@ -232,7 +232,7 @@ public class TotemItem extends Item {
       totemEntity.setOwner(player.getUUID());
       totemEntity.upgrade(initialType);
 
-      data.addTotem(totemPos, player.getUUID(), initialType.getRadius(), "Upgradable");
+      data.addTotem((ServerLevel) level, totemPos, player.getUUID(), initialType.getRadius(), "Upgradable");
 
       removeItemFromInventory(player, requiredBlock.asItem(), 1);
 
@@ -415,9 +415,14 @@ public class TotemItem extends Item {
     }
   }
 
+  @OnlyIn(Dist.CLIENT)
   @Override
-  public void appendHoverText(
-      ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
+  public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
+    Player clientPlayer = Minecraft.getInstance().player;
+    if (clientPlayer == null) {
+      return;
+    }
+
     ClientTotemSavedData clientData = ClientTotemSavedData.get();
     Map<BlockPos, TotemSavedData.TotemData> totemDataMap = clientData.getTotemDataMap();
 
@@ -429,39 +434,39 @@ public class TotemItem extends Item {
       } catch (IllegalArgumentException | NullPointerException e) {
         currentMode = StaffMode.PLACE_TOTEM;
       }
-
       tooltip.add(
-          Component.translatable("message.furtotemsmod.mode_description." + currentMode.name())
-              .withStyle(ChatFormatting.GRAY));
-
+              Component.translatable("message.furtotemsmod.mode_description." + currentMode.name())
+                      .withStyle(ChatFormatting.GRAY)
+      );
     } else {
       tooltip.add(
-          Component.translatable("message.furtotemsmod.hold_shift_for_details")
-              .withStyle(ChatFormatting.DARK_GRAY));
+              Component.translatable("message.furtotemsmod.hold_shift_for_details")
+                      .withStyle(ChatFormatting.DARK_GRAY)
+      );
 
-      long bigTotemCount =
-          totemDataMap.values().stream()
-              .filter(data -> "Upgradable".equals(data.getType()))
+      long bigTotemCount = totemDataMap.values().stream()
+              .filter(data -> "Upgradable".equals(data.getType())
+                      && data.getOwner().equals(clientPlayer.getUUID()))
               .count();
-
       tooltip.add(
-          Component.translatable("message.furtotemsmod.big_totem_count", bigTotemCount)
-              .withStyle(ChatFormatting.AQUA));
-
-      if (!totemDataMap.isEmpty()) {
-        tooltip.add(
-            Component.translatable("message.furtotemsmod.totem_locations")
-                .withStyle(ChatFormatting.GOLD));
-        for (Map.Entry<BlockPos, TotemSavedData.TotemData> entry : totemDataMap.entrySet()) {
-          if ("Upgradable".equals(entry.getValue().getType())) {
-            tooltip.add(Component.literal(entry.getKey().toShortString()));
-          }
+              Component.translatable("message.furtotemsmod.big_totem_count", bigTotemCount)
+                      .withStyle(ChatFormatting.AQUA)
+      );
+      boolean found = false;
+      for (Map.Entry<BlockPos, TotemSavedData.TotemData> entry : totemDataMap.entrySet()) {
+        TotemSavedData.TotemData data = entry.getValue();
+        if ("Upgradable".equals(data.getType()) && data.getOwner().equals(clientPlayer.getUUID())) {
+          tooltip.add(Component.literal(entry.getKey().toShortString()));
+          found = true;
         }
-      } else {
+      }
+      if (!found) {
         tooltip.add(
-            Component.translatable("message.furtotemsmod.no_totems_found")
-                .withStyle(ChatFormatting.RED));
+                Component.translatable("message.furtotemsmod.no_totems_found")
+                        .withStyle(ChatFormatting.RED)
+        );
       }
     }
   }
+
 }

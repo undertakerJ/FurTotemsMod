@@ -79,7 +79,7 @@ public class TotemEventHandlers {
       TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
 
       if (totemData != null
-          && !totemData.isMember(event.getPlayer().getUUID())
+          && !data.isPlayerMember(totemData.getOwner(), event.getPlayer().getUUID())
           && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
 
         event.setCanceled(true);
@@ -107,7 +107,7 @@ public class TotemEventHandlers {
       TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
 
       if (totemData != null
-          && !(event.getEntity() instanceof Player && totemData.isMember(player.getUUID()))
+          && !(event.getEntity() instanceof Player && data.isPlayerMember(totemData.getOwner(), player.getUUID()))
           && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
         event.setCanceled(true);
         if (event.getEntity() instanceof Player) {
@@ -230,12 +230,9 @@ public class TotemEventHandlers {
   @SubscribeEvent
   public static void mobSpawnEvent(LivingSpawnEvent.CheckSpawn event) {
     if (!FurConfig.PREVENT_MOB_SPAWN.get()) return;
-    // Если уровень – генерация чанка, пропускаем событие
-    if (event.getLevel() instanceof WorldGenRegion) return;
+    if(!(event.getLevel() instanceof ServerLevel level)) return;
     if (!(event.getEntity() instanceof Monster monster)) return;
-    if (!(event.getLevel() instanceof ServerLevel level)) return;
     if (event.getSpawnReason() == MobSpawnType.SPAWNER) return;
-
     BlockPos pos = monster.blockPosition();
     TotemSavedData data = TotemSavedData.get(level);
     BlockPos nearestTotem = data.getNearestTotem(pos);
@@ -243,7 +240,7 @@ public class TotemEventHandlers {
     if (nearestTotem != null) {
       TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
       if (totemData != null && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
-        event.setCanceled(true);
+        event.setResult(Event.Result.DENY);
       }
     }
   }
@@ -451,10 +448,10 @@ public class TotemEventHandlers {
 
       double radius = totemData.getRadius();
 
-      if (player.getUUID().equals(totemData.getOwner()) || totemData.isMember(player.getUUID()))
+      if (player.getUUID().equals(totemData.getOwner()) || data.isPlayerMember(totemData.getOwner(), player.getUUID()))
         return;
 
-      if (totemData.isBlacklisted(player.getUUID())) {
+      if (data.isBlacklisted(totemData.getOwner(), player.getUUID()))  {
         teleportPlayerOutOfRadius(player, nearestTotem, radius);
         player.displayClientMessage(
             Component.translatable("message.furtotemsmod.in_blacklist"), true);
@@ -622,7 +619,7 @@ public class TotemEventHandlers {
               Component.translatable("message.furtotemsmod.too_many_small_totems"), true);
           return;
         }
-        data.addTotem(pos, player.getUUID(), radius, "Small");
+        data.addTotem(serverLevel, pos, player.getUUID(), radius, "Small");
       } else if (placedBlock.getBlock() instanceof UpgradableTotemBlock) {
         int currentBigTotems = data.getPlayerTotemCount(player.getUUID()).getBigTotems();
         if (currentBigTotems > maxBigTotems) {

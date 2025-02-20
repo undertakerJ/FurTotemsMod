@@ -4,20 +4,25 @@ import java.util.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.undertaker.furtotemsmod.FurTotemsMod;
 import net.undertaker.furtotemsmod.util.PlacedBlockManager;
-import net.undertaker.furtotemsmod.util.ServerLevelAccessor;
 
 public class TotemSavedData extends SavedData {
   private final Map<BlockPos, TotemData> totemDataMap = new HashMap<>();
+
   private final Map<UUID, TotemCount> totemsPerPlayer = new HashMap<>();
 
   public final Map<BlockPos, Long> placedBlocks = new HashMap<>();
   public final Map<BlockPos, BlockInZoneEntry> placedBlocksInZone = new HashMap<>();
+  private final Map<BlockPos, Long> placedBlocksOutZone = new HashMap<>();
+
+  private final Map<UUID, Set<UUID>> whitelistPlayers = new HashMap<>();
+  private final Map<UUID, Set<UUID>> blacklistPlayers = new HashMap<>();
 
   public static class TotemData {
     private final UUID owner;
@@ -48,45 +53,6 @@ public class TotemSavedData extends SavedData {
       return type;
     }
 
-    public Set<UUID> getMembers() {
-      return members;
-    }
-
-    public void addMember(UUID memberUUID) {
-      members.add(memberUUID);
-    }
-
-    public void removeMember(UUID memberUUID) {
-      members.remove(memberUUID);
-    }
-
-    public boolean isMember(UUID memberUUID) {
-      if (owner == null) {
-        return false;
-      }
-      return owner.equals(memberUUID) || members.contains(memberUUID);
-    }
-
-
-    private final List<UUID> blacklistedPlayers = new ArrayList<>();
-
-    public boolean isBlacklisted(UUID playerUUID) {
-      return blacklistedPlayers.contains(playerUUID);
-    }
-
-    public void addToBlacklist(UUID playerUUID) {
-      if (!blacklistedPlayers.contains(playerUUID)) {
-        blacklistedPlayers.add(playerUUID);
-      }
-    }
-
-    public void removeFromBlacklist(UUID playerUUID) {
-      blacklistedPlayers.remove(playerUUID);
-    }
-
-    public List<UUID> getBlacklistedPlayers() {
-      return Collections.unmodifiableList(blacklistedPlayers);
-    }
   }
 
   public static class TotemCount {
@@ -133,25 +99,50 @@ public class TotemSavedData extends SavedData {
       this.placedTime = placedTime;
     }
   }
+
+  public void addToBlacklist(UUID ownerUUID, UUID playerUUID) {
+    blacklistPlayers.computeIfAbsent(ownerUUID, k -> new HashSet<>()).add(playerUUID);
+    setDirty();
+  }
+
+  public void removeFromBlacklist(UUID ownerUUID, UUID playerUUID) {
+    blacklistPlayers.getOrDefault(ownerUUID, Collections.emptySet()).remove(playerUUID);
+    setDirty();
+  }
+
+  public boolean isBlacklisted(UUID ownerUUID, UUID playerUUID) {
+    return blacklistPlayers.getOrDefault(ownerUUID, Collections.emptySet()).contains(playerUUID);
+  }
+
+  public void addMemberToTotem(UUID ownerUUID, UUID memberUUID) {
+    whitelistPlayers.computeIfAbsent(ownerUUID, k -> new HashSet<>()).add(memberUUID);
+    setDirty();
+  }
+
+  public void removeMemberFromTotem(UUID ownerUUID, UUID memberUUID) {
+    whitelistPlayers.getOrDefault(ownerUUID, Collections.emptySet()).remove(memberUUID);
+    setDirty();
+  }
+
+  public boolean isPlayerMember(UUID ownerUUID, UUID playerUUID) {
+    return ownerUUID.equals(playerUUID) ||
+            whitelistPlayers.getOrDefault(ownerUUID, Collections.emptySet()).contains(playerUUID);
+  }
+
   public void addBlockInZone(BlockPos pos, BlockInZoneEntry entry) {
     this.placedBlocksInZone.put(pos, entry);
   }
+
   public void addBlock(BlockPos pos, long time) {
     this.placedBlocks.put(pos, time);
   }
+
   public Map<BlockPos, Long> getPlacedBlocks() {
     return placedBlocks;
   }
 
   public Map<BlockPos, BlockInZoneEntry> getPlacedBlocksInZone() {
     return placedBlocksInZone;
-  }
-
-  public void addToBlacklist(UUID ownerUUID, UUID playerUUID) {
-    totemDataMap.values().stream()
-        .filter(totem -> totem.getOwner().equals(ownerUUID))
-        .forEach(totem -> totem.addToBlacklist(playerUUID));
-    setDirty();
   }
 
   public static String getOwnerName(ServerLevel level, UUID ownerUUID) {
@@ -180,25 +171,6 @@ public class TotemSavedData extends SavedData {
     return affectingTotems;
   }
 
-  public void removeFromBlacklist(UUID ownerUUID, UUID playerUUID) {
-    totemDataMap.values().stream()
-        .filter(totem -> totem.getOwner().equals(ownerUUID))
-        .forEach(totem -> totem.removeFromBlacklist(playerUUID));
-    setDirty();
-  }
-
-  public boolean isBlacklisted(UUID ownerUUID, UUID playerUUID) {
-    return totemDataMap.values().stream()
-        .filter(totem -> totem.getOwner().equals(ownerUUID))
-        .anyMatch(totem -> totem.isBlacklisted(playerUUID));
-  }
-
-  public void addMemberToTotem(UUID ownerUUID, UUID memberUUID) {
-    totemDataMap.values().stream()
-        .filter(totem -> totem.getOwner().equals(ownerUUID))
-        .forEach(totem -> totem.addMember(memberUUID));
-    setDirty();
-  }
 
   public Set<BlockPos> getSmallTotemPositions() {
     Set<BlockPos> smallTotemPositions = new HashSet<>();
@@ -210,25 +182,11 @@ public class TotemSavedData extends SavedData {
     return smallTotemPositions;
   }
 
-  public void removeMemberFromTotem(UUID ownerUUID, UUID memberUUID) {
-    totemDataMap.values().stream()
-        .filter(totem -> totem.getOwner().equals(ownerUUID))
-        .forEach(totem -> totem.removeMember(memberUUID));
-    setDirty();
-  }
-
-  public boolean isPlayerMember(UUID ownerUUID, UUID playerUUID) {
-    return totemDataMap.values().stream()
-        .filter(totem -> totem.getOwner().equals(ownerUUID))
-        .anyMatch(totem -> totem.isMember(playerUUID));
-  }
-
   public TotemCount getPlayerTotemCount(UUID playerUUID) {
     return totemsPerPlayer.computeIfAbsent(playerUUID, uuid -> new TotemCount());
   }
 
-  public void addTotem(BlockPos pos, UUID owner, int radius, String type) {
-    ServerLevel level = ServerLevelAccessor.getServerLevel();
+  public void addTotem(ServerLevel level, BlockPos pos, UUID owner, int radius, String type) {
     if(level.isClientSide()) return;
     TotemData newTotem = new TotemData(owner, radius, type);
     totemDataMap.put(pos, newTotem);
@@ -311,6 +269,9 @@ public class TotemSavedData extends SavedData {
     return false;
   }
 
+  public Map<BlockPos, Long> getPlacedBlocksOutZone() {
+    return placedBlocksOutZone;
+  }
 
   public boolean isPositionProtected(BlockPos pos, UUID playerUUID) {
     BlockPos nearestTotem = getNearestTotem(pos);
@@ -320,7 +281,7 @@ public class TotemSavedData extends SavedData {
     if (totemData == null) return false;
 
     return nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)
-        && !totemData.isMember(playerUUID);
+        && !isPlayerMember(totemData.getOwner(), playerUUID);
   }
 
   public BlockPos getNearestTotem(BlockPos targetPos) {
@@ -346,9 +307,11 @@ public class TotemSavedData extends SavedData {
     for (Tag entry : totemList) {
       CompoundTag compound = (CompoundTag) entry;
       BlockPos pos = new BlockPos(compound.getInt("X"), compound.getInt("Y"), compound.getInt("Z"));
+
       UUID owner = compound.getUUID("Owner");
       int radius = compound.getInt("Radius");
       String type = compound.getString("Type");
+
       data.totemDataMap.put(pos, new TotemData(owner, radius, type));
     }
 
@@ -380,6 +343,43 @@ public class TotemSavedData extends SavedData {
       long time = blockTag.getLong("Time");
       data.placedBlocksInZone.put(pos, new BlockInZoneEntry(new TotemData(owner, radius, type), time));
     }
+
+    ListTag outZoneList = tag.getList("PlacedBlocksOutZone", Tag.TAG_COMPOUND);
+    for (Tag t : outZoneList) {
+      CompoundTag entryTag = (CompoundTag) t;
+      BlockPos pos = new BlockPos(
+              entryTag.getInt("X"),
+              entryTag.getInt("Y"),
+              entryTag.getInt("Z")
+      );
+      long time = entryTag.getLong("Time");
+      data.placedBlocksOutZone.put(pos, time);
+    }
+
+    ListTag whitelistTag = tag.getList("Whitelist", Tag.TAG_COMPOUND);
+    for (Tag tag1 : whitelistTag) {
+      CompoundTag entryTag = (CompoundTag) tag1;
+      UUID owner = entryTag.getUUID("Owner");
+      Set<UUID> members = new HashSet<>();
+      ListTag membersTag = entryTag.getList("Members", Tag.TAG_COMPOUND);
+      for (Tag memberTag : membersTag) {
+        members.add(NbtUtils.loadUUID((CompoundTag) memberTag));
+      }
+      data.whitelistPlayers.put(owner, members);
+    }
+
+    ListTag blacklistTag = tag.getList("Blacklist", Tag.TAG_COMPOUND);
+    for (Tag tag1 : blacklistTag) {
+      CompoundTag entryTag = (CompoundTag) tag1;
+      UUID owner = entryTag.getUUID("Owner");
+      Set<UUID> blocked = new HashSet<>();
+      ListTag blockedTag = entryTag.getList("Blacklist", Tag.TAG_COMPOUND);
+      for (Tag blockedEntry : blockedTag) {
+        blocked.add(NbtUtils.loadUUID((CompoundTag) blockedEntry));
+      }
+      data.blacklistPlayers.put(owner, blocked);
+    }
+
     return data;
   }
 
@@ -387,16 +387,19 @@ public class TotemSavedData extends SavedData {
   public CompoundTag save(CompoundTag tag) {
     ListTag totemList = new ListTag();
     for (Map.Entry<BlockPos, TotemData> entry : totemDataMap.entrySet()) {
-      CompoundTag compound = new CompoundTag();
+      CompoundTag totemTag = new CompoundTag();
       BlockPos pos = entry.getKey();
       TotemData data = entry.getValue();
-      compound.putInt("X", pos.getX());
-      compound.putInt("Y", pos.getY());
-      compound.putInt("Z", pos.getZ());
-      compound.putUUID("Owner", data.getOwner());
-      compound.putInt("Radius", data.getRadius());
-      compound.putString("Type", data.getType());
-      totemList.add(compound);
+
+      totemTag.putInt("X", pos.getX());
+      totemTag.putInt("Y", pos.getY());
+      totemTag.putInt("Z", pos.getZ());
+
+      totemTag.putUUID("Owner", data.getOwner());
+      totemTag.putInt("Radius", data.getRadius());
+      totemTag.putString("Type", data.getType());
+      totemList.add(totemTag);
+
     }
     tag.put("Totems", totemList);
 
@@ -438,6 +441,40 @@ public class TotemSavedData extends SavedData {
       placedInZoneList.add(blockTag);
     }
     tag.put("PlacedBlocksInZone", placedInZoneList);
+
+    ListTag outZoneList = new ListTag();
+    for (Map.Entry<BlockPos, Long> entry : placedBlocksOutZone.entrySet()) {
+      CompoundTag entryTag = new CompoundTag();
+      BlockPos pos = entry.getKey();
+      entryTag.putInt("X", pos.getX());
+      entryTag.putInt("Y", pos.getY());
+      entryTag.putInt("Z", pos.getZ());
+      entryTag.putLong("Time", entry.getValue());
+      outZoneList.add(entryTag);
+    }
+    tag.put("PlacedBlocksOutZone", outZoneList);
+
+    ListTag whitelistTag = new ListTag();
+    whitelistPlayers.forEach((owner, members) -> {
+      CompoundTag entryTag = new CompoundTag();
+      entryTag.putUUID("Owner", owner);
+      ListTag membersTag = new ListTag();
+      members.forEach(uuid -> membersTag.add(NbtUtils.createUUID(uuid)));
+      entryTag.put("Members", membersTag);
+      whitelistTag.add(entryTag);
+    });
+    tag.put("Whitelist", whitelistTag);
+
+    ListTag blacklistTag = new ListTag();
+    blacklistPlayers.forEach((owner, blocked) -> {
+      CompoundTag entryTag = new CompoundTag();
+      entryTag.putUUID("Owner", owner);
+      ListTag blockedTag = new ListTag();
+      blocked.forEach(uuid -> blockedTag.add(NbtUtils.createUUID(uuid)));
+      entryTag.put("Blacklist", blockedTag);
+      blacklistTag.add(entryTag);
+    });
+    tag.put("Blacklist", blacklistTag);
 
     return tag;
   }
