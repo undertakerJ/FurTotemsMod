@@ -79,8 +79,29 @@
   "message.furtotemsmod.player_not_in_blacklist": "That Player is not in your blacklist!",
   "message.furtotemsmod.removing_from_blacklist": "Removing from blacklist...",
   "message.furtotemsmod.more_light_level": "It's too dark here; you need skylight to place a totem here.",
-   "message.furtotemsmod.totem_tooltip": "Totem at: ",
-"message.furtotemsmod.enter_protection": "You are entering the protection of ",
-"message.furtotemsmod.leave_protection": "You are leaving the protection of "
+  "message.furtotemsmod.totem_tooltip": "Totem at: ",
+  "message.furtotemsmod.enter_protection": "You are entering the protection of ",
+  "message.furtotemsmod.leave_protection": "You are leaving the protection of ",
+  "message.furtotemsmod.no_players_in_list": "No players in current list.",
+  "message.furtotemsmod.data_not_loaded": "Data not loaded!",
+
+  "command.add_block.failure.exist": "Error. This ID %1$s - already exists in the blacklist.",
+  "command.add_block.success": "Successfully added block %1$s to the blacklist.",
+  "command.add_to_small_totem.failure.exist": "Error. This ID %1$s - already exist in config.",
+  "command.add_to_small_totem.success": "Successfully added block %1$s to Minor Totems.",
+  "command.remove_from_small_totem.failure.exist": "Error. There is no block in config with ID %1$s",
+  "command.remove_from_small_totem.success": "Removed block with ID %1$s",
+  "command.remove_block.failure.exist": "Error. There is no block in config with ID %1$s",
+  "command.remove_block.success": "Removed block with ID %1$s",
+
+  "command.error.player_not_found": "Player not found.",
+  "command.add_member.failure.exist": "Error. %1$s - is already on your whitelist.",
+  "command.remove_member.failure.not_exist": "Error. %1$s - is not on your whitelist.",
+  "command.add_member.success": "Added %1$s - to your totem's whitelist.",
+  "command.remove_member.success": "Removed %1$s - from your totem's whitelist.",
+  "command.add_blacklist.failure.exist": "Error. %1$s - is already on your blacklist.",
+  "command.remove_blacklist.failure.not_exist": "Error. %1$s - player is not on your blacklist.",
+  "command.add_blacklist.success": "Added %1$s - to your totem's blacklist..",
+  "command.remove_blacklist.success": "Removed %1$s - from your totem's blacklist.."
 
 }

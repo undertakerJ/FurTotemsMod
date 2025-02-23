@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.BlockEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -39,44 +40,31 @@ public class PlacedBlockManager {
     data.setDirty();
   }
 
-  public static void processBlocks(Level level) {
-    long currentTime = level.getGameTime();
+  public static void processBlocks(ServerLevel serverLevel) {
+    long currentTime = serverLevel.getGameTime();
     List<BlockPos> toRemove = new ArrayList<>();
-    if (level.isClientSide) return;
-    ServerLevel serverLevel = (ServerLevel) level;
     TotemSavedData data = TotemSavedData.get(serverLevel);
     int breakDelay = FurConfig.BLOCK_BREAK_DELAY.get() * 20;
 
     for (Map.Entry<BlockPos, Long> entry : data.getPlacedBlocks().entrySet()) {
       BlockPos pos = entry.getKey();
       long placedTime = entry.getValue();
-      if (currentTime - placedTime >= breakDelay) {
-        BlockPos nearestTotem = data.getNearestTotem(pos);
-        if (nearestTotem == null
-            || nearestTotem.distSqr(pos)
-                > Math.pow(data.getTotemData(nearestTotem).getRadius(), 2)) {
-          level.destroyBlock(pos, true);
+      if (currentTime - placedTime >= breakDelay && !isBlockInTotemRadius(serverLevel, pos)) {
+          serverLevel.destroyBlock(pos, true);
           toRemove.add(pos);
         }
-      } else {
-        BlockPos nearestTotem = data.getNearestTotem(pos);
-        if (nearestTotem == null
-            || nearestTotem.distSqr(pos)
-                > Math.pow(data.getTotemData(nearestTotem).getRadius(), 2)) {
+      if (!isBlockInTotemRadius(serverLevel, pos)) {
           double elapsedTime = currentTime - placedTime;
           int destroyStage = (int) Math.min(9, (elapsedTime / (double) breakDelay) * 9);
-          level.destroyBlockProgress(pos.hashCode(), pos, destroyStage);
-        }
+          serverLevel.destroyBlockProgress(pos.hashCode(), pos, destroyStage);
       }
     }
     toRemove.forEach(data.getPlacedBlocks()::remove);
     data.setDirty();
   }
 
-  public static void processBlocksOutZone(Level level) {
-    long currentTime = level.getGameTime();
-    if (level.isClientSide) return;
-    ServerLevel serverLevel = (ServerLevel) level;
+  public static void processBlocksOutZone(ServerLevel serverLevel) {
+    long currentTime = serverLevel.getGameTime();
     TotemSavedData data = TotemSavedData.get(serverLevel);
     int delayTicks = FurConfig.DELAY_BLOCK_DESTROY_IN_ZONE.get() * 20;
 
@@ -84,13 +72,24 @@ public class PlacedBlockManager {
     for (Map.Entry<BlockPos, Long> entry : data.getPlacedBlocksOutZone().entrySet()) {
       BlockPos pos = entry.getKey();
       long placedTime = entry.getValue();
-      if (currentTime - placedTime >= delayTicks) {
-        level.destroyBlock(pos, true);
-        toRemove.add(pos);
-      } else {
-        double elapsedTime = currentTime - placedTime;
-        int destroyStage = (int) Math.min(9, (elapsedTime / (double) delayTicks) * 9);
-        level.destroyBlockProgress(pos.hashCode(), pos, destroyStage);
+      if (isBlockInTotemRadius(serverLevel, pos)) {
+        TotemSavedData.TotemData nearestTotemData = TotemSavedData.getNearestTotemData(serverLevel, pos);
+        if (nearestTotemData != null) {
+          serverLevel.destroyBlockProgress(pos.hashCode(), pos, -1);
+          data.getPlacedBlocksOutZone().remove(pos);
+          data.getPlacedBlocksInZone().put(pos, new TotemSavedData.BlockInZoneEntry(nearestTotemData, currentTime));
+        }
+        continue;
+      }
+      if (!isBlockInTotemRadius(serverLevel, pos)) {
+        if (currentTime - placedTime >= delayTicks) {
+          serverLevel.destroyBlock(pos, true);
+          toRemove.add(pos);
+        } else {
+          double elapsedTime = currentTime - placedTime;
+          int destroyStage = (int) Math.min(9, (elapsedTime / (double) delayTicks) * 9);
+          serverLevel.destroyBlockProgress(pos.hashCode(), pos, destroyStage);
+        }
       }
     }
     toRemove.forEach(data.getPlacedBlocksOutZone()::remove);
@@ -102,22 +101,16 @@ public class PlacedBlockManager {
     TotemSavedData data = TotemSavedData.get(level);
     long currentTime = level.getGameTime();
 
-    List<BlockPos> toMove = new ArrayList<>();
-    for (Map.Entry<BlockPos, TotemSavedData.BlockInZoneEntry> entry :
-        data.getPlacedBlocksInZone().entrySet()) {
+    for (Map.Entry<BlockPos, TotemSavedData.BlockInZoneEntry> entry : new ArrayList<>(data.getPlacedBlocksInZone().entrySet())) {
       BlockPos pos = entry.getKey();
-      TotemSavedData.BlockInZoneEntry entryData = entry.getValue();
-      if (entryData.totemData.equals(destroyedTotem)) {
-        toMove.add(pos);
-      }
-    }
-    for (BlockPos pos : toMove) {
+
       data.getPlacedBlocksInZone().remove(pos);
       data.getPlacedBlocksOutZone().put(pos, currentTime);
     }
+    restoreDelayedTasks(level);
     data.setDirty();
-    PlacedBlockManager.restoreDelayedTasks(level);
   }
+
 
   private static boolean isBlockInTotemRadius(ServerLevel level, BlockPos pos) {
     TotemSavedData data = TotemSavedData.get(level);
@@ -129,30 +122,13 @@ public class PlacedBlockManager {
     return false;
   }
 
-  private static void scheduleBlockProgress(
-      ServerLevel level, BlockPos pos, int delayTicks, UUID taskId) {
-    int interval = delayTicks / 9;
-    for (int stage = 1; stage <= 9; stage++) {
-      int ticksForStage = interval * stage;
-      int finalStage = stage;
-      DelayedTaskManager.addTask(
-          UUID.randomUUID(),
-          ticksForStage,
-          () -> {
-            if (!DelayedTaskManager.isTaskCancelled(taskId)) {
-              level.destroyBlockProgress(pos.hashCode(), pos, finalStage);
-            }
-          });
-    }
-  }
-
-  @SubscribeEvent
+  @SubscribeEvent(priority = EventPriority.LOWEST)
   public static void levelTick(TickEvent.LevelTickEvent event) {
-    if (event.level.isClientSide() || event.phase != TickEvent.Phase.END) return;
-
-    Level level = event.level;
-    processBlocks(level);
-    processBlocksOutZone(level);
+    if (event.phase != TickEvent.Phase.END) return;
+    if (event.level instanceof ServerLevel level) {
+      processBlocks(level);
+      processBlocksOutZone(level);
+    }
   }
 
   @SubscribeEvent
@@ -189,34 +165,18 @@ public class PlacedBlockManager {
     long currentTime = level.getGameTime();
     int delayTicks = FurConfig.DELAY_BLOCK_DESTROY_IN_ZONE.get() * 20;
 
-    for (Map.Entry<BlockPos, TotemSavedData.BlockInZoneEntry> entry :
-        new ArrayList<>(data.getPlacedBlocksInZone().entrySet())) {
+    for (Map.Entry<BlockPos, Long> entry : new ArrayList<>(data.getPlacedBlocksOutZone().entrySet())) {
       BlockPos pos = entry.getKey();
-      TotemSavedData.BlockInZoneEntry zoneEntry = entry.getValue();
-      long placedTime = zoneEntry.placedTime;
-
-      if (!isBlockInTotemRadius(level, pos)) {
-        data.getPlacedBlocksInZone().remove(pos);
-        data.getPlacedBlocksOutZone().put(pos, placedTime);
+      long placedTime = entry.getValue();
+      long elapsed = currentTime - placedTime;
+      int remaining = (int) Math.max(delayTicks - elapsed, 0);
+      if (remaining <= 0 && !isBlockInTotemRadius(level, pos)) {
+        level.destroyBlock(pos, true);
+        data.getPlacedBlocksOutZone().remove(pos);
+      }  if (remaining > 0 && !isBlockInTotemRadius(level, pos)) {
+        processBlocksOutZone(level);
+        break;
       }
-    }
-
-    for (Map.Entry<BlockPos, Long> entry :
-        new ArrayList<>(data.getPlacedBlocksOutZone().entrySet())) {
-      BlockPos pos = entry.getKey();
-      UUID taskId = UUID.randomUUID();
-      DelayedTaskManager.addTask(
-          taskId, delayTicks,
-          () -> {
-            if (!isBlockInTotemRadius(level, pos)) {
-              level.destroyBlock(pos, true);
-              data.getPlacedBlocksOutZone().remove(pos);
-            } else {
-              DelayedTaskManager.cancelTask(taskId);
-            }
-            data.setDirty();
-          });
-      scheduleBlockProgress(level, pos, delayTicks, taskId);
     }
     data.setDirty();
   }

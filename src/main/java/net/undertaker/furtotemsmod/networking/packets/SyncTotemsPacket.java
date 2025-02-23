@@ -7,9 +7,8 @@ import net.minecraftforge.network.NetworkEvent;
 import net.undertaker.furtotemsmod.data.ClientTotemSavedData;
 import net.undertaker.furtotemsmod.data.TotemSavedData;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public class SyncTotemsPacket {
@@ -20,10 +19,9 @@ public class SyncTotemsPacket {
     }
 
     public SyncTotemsPacket(FriendlyByteBuf buf) {
-        int size = buf.readInt();
+        int totemMapSize = buf.readInt();
         this.totemDataMap = new HashMap<>();
-
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < totemMapSize; i++) {
             BlockPos pos = buf.readBlockPos();
             UUID owner = buf.readUUID();
             int radius = buf.readInt();

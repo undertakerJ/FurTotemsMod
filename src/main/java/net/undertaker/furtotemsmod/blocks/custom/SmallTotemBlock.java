@@ -20,12 +20,10 @@ import net.undertaker.furtotemsmod.data.TotemSavedData;
 
 
 public class SmallTotemBlock extends HorizontalDirectionalBlock implements EntityBlock {
-    public static final int MAX_LIFETIME = 6000;
     public SmallTotemBlock(Properties properties) {
         super(properties);
         this.registerDefaultState(this.defaultBlockState().setValue(FACING, Direction.NORTH));
     }
-    private long placedTime;
 
     public static final VoxelShape SHAPE = Block.box(3,0,3, 13, 14, 13);
 
@@ -57,31 +55,5 @@ public class SmallTotemBlock extends HorizontalDirectionalBlock implements Entit
     }
 
 
-    @Override
-    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
-        super.onPlace(state, level, pos, oldState, isMoving);
-        if (!level.isClientSide) {
-            level.scheduleTick(pos, this, 20);
-            placedTime = level.getGameTime();
-        }
-    }
-    @Override
-    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        long currentTime = level.getGameTime();
-        TotemSavedData data = TotemSavedData.get(level);
 
-        double elapsedTime = currentTime - placedTime;
-
-        int destroyStage = (int) Math.min(9, (elapsedTime / MAX_LIFETIME) * 9);
-
-        level.destroyBlockProgress(pos.hashCode(), pos, destroyStage);
-
-
-        if (elapsedTime < MAX_LIFETIME) {
-            level.scheduleTick(pos, this, 20);
-        } else {
-            level.destroyBlock(pos, false);
-           data.removeTotem(level, pos);
-        }
-    }
-    }
+}

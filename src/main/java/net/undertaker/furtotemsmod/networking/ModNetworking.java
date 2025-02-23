@@ -7,9 +7,7 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import net.undertaker.furtotemsmod.FurTotemsMod;
-import net.undertaker.furtotemsmod.networking.packets.ChangeModePacket;
-import net.undertaker.furtotemsmod.networking.packets.SyncTotemMaterialPacket;
-import net.undertaker.furtotemsmod.networking.packets.SyncTotemsPacket;
+import net.undertaker.furtotemsmod.networking.packets.*;
 
 public class ModNetworking {
   private static SimpleChannel INSTANCE;
@@ -43,7 +41,19 @@ public class ModNetworking {
         .consumerMainThread(SyncTotemsPacket::handle)
         .add();
     INSTANCE
-        .messageBuilder(SyncTotemMaterialPacket.class, 3)
+        .messageBuilder(SyncBlacklistPacket.class, 3)
+        .encoder(SyncBlacklistPacket::encode)
+        .decoder(SyncBlacklistPacket::new)
+        .consumerMainThread(SyncBlacklistPacket::handle)
+        .add();
+    INSTANCE
+        .messageBuilder(SyncWhitelistPacket.class, 4)
+        .encoder(SyncWhitelistPacket::encode)
+        .decoder(SyncWhitelistPacket::new)
+        .consumerMainThread(SyncWhitelistPacket::handle)
+        .add();
+    INSTANCE
+        .messageBuilder(SyncTotemMaterialPacket.class, 5)
         .encoder(SyncTotemMaterialPacket::encode)
         .decoder(SyncTotemMaterialPacket::decode)
         .consumerMainThread(SyncTotemMaterialPacket::receive)

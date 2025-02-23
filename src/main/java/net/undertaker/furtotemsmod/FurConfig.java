@@ -5,9 +5,6 @@ import net.minecraftforge.fml.common.Mod;
 
 import java.util.List;
 
-// An example config class. This is not required, but it's a good idea to have one to keep your
-// config organized.
-// Demonstrates how to use Forge's config APIs
 @Mod.EventBusSubscriber(modid = FurTotemsMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class FurConfig {
   public static final ForgeConfigSpec SERVER_CONFIG;
@@ -31,6 +28,7 @@ public class FurConfig {
   public static final ForgeConfigSpec.BooleanValue DISABLE_ITEM_TOSS;
   public static final ForgeConfigSpec.BooleanValue PLAYER_TOTEM_DEBUFFS;
   public static final ForgeConfigSpec.BooleanValue CREATIVE_IGNORE_TOTEMS;
+  public static final ForgeConfigSpec.BooleanValue KEEP_BLOCKS_AFTER_RESTART;
 
   public static final ForgeConfigSpec.BooleanValue PREVENT_TOTEM_NEAR_SPAWNER;
   public static final ForgeConfigSpec.IntValue SPAWNER_CHECK_RADIUS;
@@ -53,23 +51,46 @@ public class FurConfig {
   public static final ForgeConfigSpec.ConfigValue<List<? extends String>> BLACKLIST_DECAY_BLOCKS;
   public static final ForgeConfigSpec.ConfigValue<List<? extends String>> DISABLE_BLOCK_BREAK_DIMENSIONS;
 
+  public static ForgeConfigSpec getConfig() {
+    return SERVER_CONFIG;
+  }
+
+  public static void load() {
+
+
+  }
+
+
+
+
   static {
     ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
     builder.push("events");
 
-    TOTEM_CONSUMED_BLOCK = builder
-            .comment("The block ID required to place a Totem. Example: 'minecraft:copper_block'")
+    TOTEM_CONSUMED_BLOCK =
+        builder
+            .comment("The block ID required to place a Totem. Example: \"minecraft:copper_block\"")
             .define("totemConsumedBlock", "minecraft:copper_block");
 
     DISABLE_BLOCK_BREAK_DIMENSIONS = builder
             .comment("List of dimension IDs that ignore block breaking. Example: \"minecraft:nether\"")
             .defineList("disableBlockBreakDimensions", List.of(), obj -> obj instanceof String);
-    BLACKLIST_DECAY_BLOCKS = builder
-            .comment("List of block IDs that can be placed without block decay. Example: 'minecraft:stone'")
-            .defineList("blacklistDecayBlocks", List.of("minecraft:torch","minecraft:spawner"), obj -> obj instanceof String);
-    ALLOWED_NEAR_SMALL_TOTEM = builder
-            .comment("List of block IDs that can be placed near small totems. Example: 'minecraft:stone'")
-            .defineList("allowedNearSmallTotem", List.of("minecraft:crafting_table", "minecraft:furnace", "minecraft:campfire"), obj -> obj instanceof String);
+    BLACKLIST_DECAY_BLOCKS =
+        builder
+            .comment(
+                "List of block IDs that can be placed without block decay. Example: \"minecraft:stone\"")
+            .defineList(
+                "blacklistDecayBlocks",
+                List.of("minecraft:torch", "minecraft:spawner"),
+                obj -> obj instanceof String);
+    ALLOWED_NEAR_SMALL_TOTEM =
+        builder
+            .comment(
+                "List of block IDs that can be placed near small totems. Example: \"minecraft:stone\"")
+            .defineList(
+                "allowedNearSmallTotem",
+                List.of("minecraft:crafting_table", "minecraft:furnace", "minecraft:campfire"),
+                obj -> obj instanceof String);
     PREVENT_TOTEM_NEAR_SPAWNER = builder
             .comment("Prevent placing Totems near Spawners (default - true)")
             .define("preventTotemNearSpawner", true);
@@ -148,6 +169,9 @@ public class FurConfig {
         builder
             .comment("Disable players can pickup items in zone(default - true)")
             .define("disableItemPickup", true);
+    KEEP_BLOCKS_AFTER_RESTART =
+            builder.comment("If true keeps blocks placed in zone without breaking if totem was destroyed.")
+                            .define("keepBlocksAfterRestart", false);
 
     builder.pop();
 
@@ -160,36 +184,36 @@ public class FurConfig {
 
     UPGRADEABLE_TOTEM_COPPER_RADIUS =
         builder
-            .comment("Radius of copper totem(default - 8, min - 1, max - 128)")
+            .comment("Radius of copper totem(default - 8)")
             .defineInRange("upgradeableCopperTotemRadius", 8, 1, 128);
     UPGRADEABLE_TOTEM_IRON_RADIUS =
         builder
-            .comment("Radius of iron totem(default - 16, min - 1, max - 128)")
+            .comment("Radius of iron totem(default - 16)")
             .defineInRange("upgradeableIronTotemRadius", 16, 1, 128);
     UPGRADEABLE_TOTEM_GOLD_RADIUS =
         builder
-            .comment("Radius of gold totem(default - 24, min - 1, max - 128)")
+            .comment("Radius of gold totem(default - 24)")
             .defineInRange("upgradeableGoldTotemRadius", 24, 1, 128);
     UPGRADEABLE_TOTEM_DIAMOND_RADIUS =
         builder
-            .comment("Radius of diamond totem(default - 32, min - 1, max - 128)")
+            .comment("Radius of diamond totem(default - 32)")
             .defineInRange("upgradeableDiamondTotemRadius", 32, 1, 128);
     UPGRADEABLE_TOTEM_NETHERITE_RADIUS =
         builder
-            .comment("Radius of netherite totem(default - 40, min - 1, max - 128)")
+            .comment("Radius of netherite totem(default - 40)")
             .defineInRange("upgradeableNetheriteTotemRadius", 40, 1, 128);
     BLOCK_BREAK_DELAY =
         builder
             .comment(
-                "Time in seconds, after blocks in no-zone will be destroyed(default - 5, min - 1, max - 300)")
+                "Time in seconds, after blocks in no-zone will be destroyed(default - 5)")
             .defineInRange("blockBreakDelay", 5, 1, 300);
     DELAY_BLOCK_DESTROY_IN_ZONE =
         builder
             .comment(
-                "Time in seconds, after blocks that was in totem zone will be destroyed(default - 60, min - 1, max - 600)")
+                "Time in seconds, after blocks that was in totem zone will be destroyed(default - 60)")
             .defineInRange("blockDestroyInZoneDelay", 60, 1, 600);
     SPAWNER_CHECK_RADIUS = builder
-            .comment("Radius to check for Spawners around the Totem placement(default - 48, min - 16, max - 128)")
+            .comment("Radius to check for Spawners around the Totem placement(default - 48)")
             .defineInRange("spawnerCheckRadius", 48, 16, 128);
     builder.pop();
 

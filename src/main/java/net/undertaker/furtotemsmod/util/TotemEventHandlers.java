@@ -4,14 +4,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
@@ -21,13 +20,13 @@ import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SpawnerBlock;
 import net.minecraft.world.level.block.piston.PistonStructureResolver;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.common.UsernameCache;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
@@ -45,6 +44,9 @@ import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.level.ExplosionEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.level.PistonEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraftforge.event.server.ServerStoppedEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -58,9 +60,10 @@ import net.undertaker.furtotemsmod.blocks.blockentity.UpgradableTotemBlockEntity
 import net.undertaker.furtotemsmod.blocks.custom.SmallTotemBlock;
 import net.undertaker.furtotemsmod.blocks.custom.UpgradableTotemBlock;
 import net.undertaker.furtotemsmod.data.TotemSavedData;
-import net.undertaker.furtotemsmod.items.ModItems;
 import net.undertaker.furtotemsmod.networking.ModNetworking;
+import net.undertaker.furtotemsmod.networking.packets.SyncBlacklistPacket;
 import net.undertaker.furtotemsmod.networking.packets.SyncTotemsPacket;
+import net.undertaker.furtotemsmod.networking.packets.SyncWhitelistPacket;
 
 @Mod.EventBusSubscriber(modid = FurTotemsMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class TotemEventHandlers {
@@ -451,7 +454,7 @@ public class TotemEventHandlers {
       if (player.getUUID().equals(totemData.getOwner()) || data.isPlayerMember(totemData.getOwner(), player.getUUID()))
         return;
 
-      if (data.isBlacklisted(totemData.getOwner(), player.getUUID()))  {
+      if (data.isBlacklisted(totemData.getOwner(), player.getUUID()) && !player.isCreative() && !player.isSpectator())  {
         teleportPlayerOutOfRadius(player, nearestTotem, radius);
         player.displayClientMessage(
             Component.translatable("message.furtotemsmod.in_blacklist"), true);
@@ -485,13 +488,12 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
-    if (event.getEntity() instanceof ServerPlayer player) {
-      ServerLevel serverLevel = player.getLevel();
-      if (serverLevel.getServer() == null || serverLevel == null) return;
+      if (!(event.getEntity().getLevel() instanceof ServerLevel serverLevel)) return;
+      if (!(event.getEntity() instanceof ServerPlayer serverPlayer)) return;
       TotemSavedData data = TotemSavedData.get(serverLevel);
-      ModNetworking.sendToPlayer(new SyncTotemsPacket(data.getTotemDataMap()), player);
-
-    }
+    ModNetworking.sendToPlayer(new SyncTotemsPacket(data.getTotemDataMap()), serverPlayer);
+    ModNetworking.sendToPlayer(new SyncWhitelistPacket(data.getWhitelistPlayers()), serverPlayer);
+    ModNetworking.sendToPlayer(new SyncBlacklistPacket(data.getBlacklistPlayers()), serverPlayer);
   }
 
   private static final Map<UUID, Map<String, Set<BlockPos>>> playerTotemState = new HashMap<>();
@@ -550,12 +552,14 @@ public class TotemEventHandlers {
     playerTotemState.put(player.getUUID(), currentZonesByOwner);
   }
 
+
+
   private static Map<String, Set<BlockPos>> groupZonesByOwner(
       Set<BlockPos> positions, TotemSavedData data, ServerLevel level) {
     Map<String, Set<BlockPos>> zonesByOwner = new HashMap<>();
     for (BlockPos pos : positions) {
       TotemSavedData.TotemData totemData = data.getTotemData(pos);
-      String owner = totemData != null ? totemData.getOwnerName(level) : "None";
+      String owner = totemData != null ? totemData.getOwnerName(totemData.getOwner()) : "None";
       zonesByOwner.computeIfAbsent(owner, k -> new HashSet<>()).add(pos);
     }
     return zonesByOwner;
@@ -612,14 +616,9 @@ public class TotemEventHandlers {
       }
 
       if (placedBlock.getBlock() instanceof SmallTotemBlock) {
-        int currentSmallTotems = data.getPlayerTotemCount(player.getUUID()).getSmallTotems();
-        if (currentSmallTotems > maxSmallTotems) {
-          event.setCanceled(true);
-          player.displayClientMessage(
-              Component.translatable("message.furtotemsmod.too_many_small_totems"), true);
-          return;
-        }
+        data.addSmallTotemWithLimit(serverLevel, pos, serverLevel.getGameTime(), (int) maxSmallTotems);
         data.addTotem(serverLevel, pos, player.getUUID(), radius, "Small");
+
       } else if (placedBlock.getBlock() instanceof UpgradableTotemBlock) {
         int currentBigTotems = data.getPlayerTotemCount(player.getUUID()).getBigTotems();
         if (currentBigTotems > maxBigTotems) {
@@ -627,12 +626,6 @@ public class TotemEventHandlers {
           player.displayClientMessage(
               Component.translatable("message.furtotemsmod.too_many_large_totems"), true);
           return;
-        }
-
-        UpgradableTotemBlockEntity totemEntity =
-            (UpgradableTotemBlockEntity) serverLevel.getBlockEntity(pos);
-        if (totemEntity != null) {
-          // data.addTotem(pos, player.getUUID(), totemEntity.getRadius(), "Upgradable");
         }
       }
     }
@@ -726,22 +719,20 @@ public class TotemEventHandlers {
 
 
   @SubscribeEvent(priority = EventPriority.HIGHEST)
-  public static void onServerStarting(RegisterCommandsEvent event) {
-    FurTotemsCommands.register(event.getDispatcher());
+  public static void worldLoad(ServerStartedEvent event) {
+    for(ServerLevel level : event.getServer().getAllLevels()){
+      ServerLevelAccessor.setServerLevel(level);
+      PlacedBlockManager.restoreDelayedTasks(level);
+    }
   }
 
-  @SubscribeEvent(priority = EventPriority.HIGHEST)
-  public static void worldLoad(LevelEvent.Load event) {
-    if (event.getLevel() instanceof ServerLevel serverLevel) {
-      ServerLevelAccessor.setServerLevel(serverLevel);
-      TotemSavedData data = TotemSavedData.get(serverLevel);
-      data.getTotemDataMap()
-          .forEach(
-              (pos, totemData) -> {
-                FurTotemsMod.LOGGER.info(
-                    "Загружен тотем на позиции {} с владельцем {}", pos, totemData.getOwner());
-              });
-      PlacedBlockManager.restoreDelayedTasks(serverLevel);
+  @SubscribeEvent
+  public static void worldStop(ServerStoppingEvent event){
+    if(FurConfig.KEEP_BLOCKS_AFTER_RESTART.get()){
+      for(ServerLevel level : event.getServer().getAllLevels()){
+        TotemSavedData data = TotemSavedData.get(level);
+        data.placedBlocksInZone.clear();
+      }
     }
   }
 
