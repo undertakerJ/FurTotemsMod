@@ -470,8 +470,6 @@ public class TotemItem extends Item {
           displayPlayersList(clientData.getWhitelistPlayers(), clientPlayer , pTooltipComponents, "Members", ChatFormatting.GREEN);
           break;
           case PLACE_TOTEM, REMOVE_TOTEM:
-            pTooltipComponents.add(Component.translatable("message.furtotemsmod.totem_list")
-                    .withStyle(ChatFormatting.AQUA));
             displayTotemPositions(totemDataMap, clientPlayer, pTooltipComponents);
           break;
         case ADD_BLACKLIST, REMOVE_BLACKLIST:
@@ -510,7 +508,7 @@ public class TotemItem extends Item {
     boolean found = false;
     for (Map.Entry<BlockPos, TotemSavedData.TotemData> entry : totemDataMap.entrySet()) {
       if (entry.getValue().getOwner().equals(player.getUUID())) {
-        tooltip.add(Component.literal("Totem Positions: " + entry.getKey().toShortString())
+        tooltip.add(Component.literal("Totem Position: " + entry.getKey().toShortString())
                 .withStyle(ChatFormatting.GOLD));
         found = true;
       }
