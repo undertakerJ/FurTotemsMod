@@ -7,9 +7,7 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import net.undertaker.furtotemsmod.FurTotemsMod;
-import net.undertaker.furtotemsmod.networking.packets.ChangeModePacket;
-import net.undertaker.furtotemsmod.networking.packets.SyncTotemMaterialPacket;
-import net.undertaker.furtotemsmod.networking.packets.SyncTotemsPacket;
+import net.undertaker.furtotemsmod.networking.packets.*;
 
 public class ModNetworking {
   private static SimpleChannel INSTANCE;
@@ -23,7 +21,7 @@ public class ModNetworking {
   public static void register() {
     SimpleChannel net =
         NetworkRegistry.ChannelBuilder.named(new ResourceLocation(FurTotemsMod.MOD_ID, "messages"))
-            .networkProtocolVersion(() -> "1.3")
+            .networkProtocolVersion(() -> "1.4")
             .clientAcceptedVersions(s -> true)
             .serverAcceptedVersions(s -> true)
             .simpleChannel();
@@ -48,7 +46,18 @@ public class ModNetworking {
         .decoder(SyncTotemMaterialPacket::decode)
         .consumerMainThread(SyncTotemMaterialPacket::receive)
         .add();
-
+    INSTANCE
+        .messageBuilder(SyncBlacklistPacket.class, 4)
+        .encoder(SyncBlacklistPacket::encode)
+        .decoder(SyncBlacklistPacket::new)
+        .consumerMainThread(SyncBlacklistPacket::handle)
+        .add();
+    INSTANCE
+        .messageBuilder(SyncWhitelistPacket.class, 5)
+        .encoder(SyncWhitelistPacket::encode)
+        .decoder(SyncWhitelistPacket::new)
+        .consumerMainThread(SyncWhitelistPacket::handle)
+        .add();
   }
 
   public static <MSG> void sendToServer(MSG message) {

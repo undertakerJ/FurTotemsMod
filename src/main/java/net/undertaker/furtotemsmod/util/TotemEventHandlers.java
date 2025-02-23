@@ -44,6 +44,8 @@ import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.level.ExplosionEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.level.PistonEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -59,7 +61,9 @@ import net.undertaker.furtotemsmod.blocks.custom.UpgradableTotemBlock;
 import net.undertaker.furtotemsmod.data.TotemSavedData;
 import net.undertaker.furtotemsmod.items.ModItems;
 import net.undertaker.furtotemsmod.networking.ModNetworking;
+import net.undertaker.furtotemsmod.networking.packets.SyncBlacklistPacket;
 import net.undertaker.furtotemsmod.networking.packets.SyncTotemsPacket;
+import net.undertaker.furtotemsmod.networking.packets.SyncWhitelistPacket;
 
 @Mod.EventBusSubscriber(modid = FurTotemsMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class TotemEventHandlers {
@@ -78,8 +82,8 @@ public class TotemEventHandlers {
       TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
 
       if (totemData != null
-          && !totemData.isMember(event.getPlayer().getUUID())
-          && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
+              && !data.isPlayerMember(totemData.getOwner(), event.getPlayer().getUUID())
+              && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
 
         event.setCanceled(true);
         event
@@ -106,7 +110,7 @@ public class TotemEventHandlers {
       TotemSavedData.TotemData totemData = data.getTotemData(nearestTotem);
 
       if (totemData != null
-          && !(event.getEntity() instanceof Player && totemData.isMember(player.getUUID()))
+          && !(event.getEntity() instanceof Player && data.isPlayerMember(totemData.getOwner(), player.getUUID()))
           && nearestTotem.distSqr(pos) <= Math.pow(totemData.getRadius(), 2)) {
         event.setCanceled(true);
         if (event.getEntity() instanceof Player) {
@@ -448,13 +452,13 @@ public class TotemEventHandlers {
 
       double radius = totemData.getRadius();
 
-      if (player.getUUID().equals(totemData.getOwner()) || totemData.isMember(player.getUUID()))
+      if (player.getUUID().equals(totemData.getOwner()) || data.isPlayerMember(totemData.getOwner(), player.getUUID()))
         return;
 
-      if (totemData.isBlacklisted(player.getUUID())) {
+      if (data.isBlacklisted(totemData.getOwner(), player.getUUID()) && !player.isCreative() && !player.isSpectator())  {
         teleportPlayerOutOfRadius(player, nearestTotem, radius);
         player.displayClientMessage(
-            Component.translatable("message.furtotemsmod.in_blacklist"), true);
+                Component.translatable("message.furtotemsmod.in_blacklist"), true);
       }
     }
   }
@@ -485,13 +489,12 @@ public class TotemEventHandlers {
 
   @SubscribeEvent
   public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
-    if(event.getEntity().level().isClientSide()) return;
-    if (event.getEntity() instanceof ServerPlayer player) {
-      ServerLevel serverLevel = (ServerLevel) player.level();
-      if (serverLevel.getServer() == null || serverLevel == null) return;
-      TotemSavedData data = TotemSavedData.get(serverLevel);
-      ModNetworking.sendToPlayer(new SyncTotemsPacket(data.getTotemDataMap()), player);
-    }
+    if (!(event.getEntity().level() instanceof ServerLevel serverLevel)) return;
+    if (!(event.getEntity() instanceof ServerPlayer serverPlayer)) return;
+    TotemSavedData data = TotemSavedData.get(serverLevel);
+    ModNetworking.sendToPlayer(new SyncTotemsPacket(data.getTotemDataMap()), serverPlayer);
+    ModNetworking.sendToPlayer(new SyncWhitelistPacket(data.getWhitelistPlayers()), serverPlayer);
+    ModNetworking.sendToPlayer(new SyncBlacklistPacket(data.getBlacklistPlayers()), serverPlayer);
   }
 
   private static final Map<UUID, Map<String, Set<BlockPos>>> playerTotemState = new HashMap<>();
@@ -555,7 +558,7 @@ public class TotemEventHandlers {
     Map<String, Set<BlockPos>> zonesByOwner = new HashMap<>();
     for (BlockPos pos : positions) {
       TotemSavedData.TotemData totemData = data.getTotemData(pos);
-      String owner = totemData != null ? totemData.getOwnerName(level) : "None";
+      String owner = totemData != null ? totemData.getOwnerName(totemData.getOwner()) : "None";
       zonesByOwner.computeIfAbsent(owner, k -> new HashSet<>()).add(pos);
     }
     return zonesByOwner;
@@ -612,15 +615,10 @@ public class TotemEventHandlers {
       }
 
       if (placedBlock.getBlock() instanceof SmallTotemBlock) {
-        int currentSmallTotems = data.getPlayerTotemCount(player.getUUID()).getSmallTotems();
-        if (currentSmallTotems > maxSmallTotems) {
-          event.setCanceled(true);
-          player.displayClientMessage(
-              Component.translatable("message.furtotemsmod.too_many_small_totems"), true);
-          return;
-        }
-        data.addTotem(pos, player.getUUID(), radius, "Small");
-      } else if (placedBlock.getBlock() instanceof UpgradableTotemBlock) {
+        data.addSmallTotemWithLimit(serverLevel, pos, serverLevel.getGameTime(), (int) maxSmallTotems);
+        data.addTotem(serverLevel, pos, player.getUUID(), radius, "Small");
+
+      }  else if (placedBlock.getBlock() instanceof UpgradableTotemBlock) {
         int currentBigTotems = data.getPlayerTotemCount(player.getUUID()).getBigTotems();
         if (currentBigTotems > maxBigTotems) {
           event.setCanceled(true);
@@ -628,10 +626,6 @@ public class TotemEventHandlers {
               Component.translatable("message.furtotemsmod.too_many_large_totems"), true);
           return;
         }
-
-        UpgradableTotemBlockEntity totemEntity =
-            (UpgradableTotemBlockEntity) serverLevel.getBlockEntity(pos);
-
       }
     }
   }
@@ -722,50 +716,21 @@ public class TotemEventHandlers {
     return false;
   }
 
-
   @SubscribeEvent(priority = EventPriority.HIGHEST)
-  public static void onServerStarting(RegisterCommandsEvent event) {
-    FurTotemsCommands.register(event.getDispatcher());
-  }
-
-  @SubscribeEvent(priority = EventPriority.HIGHEST)
-  public static void worldLoad(LevelEvent.Load event) {
-    if (event.getLevel() instanceof ServerLevel serverLevel) {
-      ServerLevelAccessor.setServerLevel(serverLevel);
-      TotemSavedData data = TotemSavedData.get(serverLevel);
-      data.getTotemDataMap()
-          .forEach(
-              (pos, totemData) -> {
-                FurTotemsMod.LOGGER.info(
-                    "Загружен тотем на позиции {} с владельцем {}", pos, totemData.getOwner());
-              });
-      PlacedBlockManager.restoreDelayedTasks(serverLevel);
+  public static void worldLoad(ServerStartedEvent event) {
+    for(ServerLevel level : event.getServer().getAllLevels()){
+      ServerLevelAccessor.setServerLevel(level);
+      PlacedBlockManager.restoreDelayedTasks(level);
     }
   }
-
-  private static final String ITEM_GRANTED_KEY = "item_granted";
 
   @SubscribeEvent
-  public static void devJoined(PlayerEvent.PlayerLoggedInEvent event) {
-    if (!(event.getEntity() instanceof ServerPlayer player)) return;
-    if(event.getEntity().level().isClientSide()) return;
-    String targetUsername = "Bastrii";
-
-    if (player.getName().getString().equals(targetUsername)) {
-      CompoundTag persistentData = player.getPersistentData();
-
-      if (persistentData.getBoolean(ITEM_GRANTED_KEY)) {
-        return;
+  public static void worldStop(ServerStoppingEvent event){
+    if(FurConfig.KEEP_BLOCKS_AFTER_RESTART.get()){
+      for(ServerLevel level : event.getServer().getAllLevels()){
+        TotemSavedData data = TotemSavedData.get(level);
+        data.placedBlocksInZone.clear();
       }
-
-      ItemStack item = new ItemStack(ModItems.WHITE_FOX_PLUSHIE.get());
-      if (!player.getInventory().add(item)) {
-        player.drop(item, false);
-      }
-
-      persistentData.putBoolean(ITEM_GRANTED_KEY, true);
-      player.sendSystemMessage(Component.translatable("message.furtotemsmod.item_granted").withStyle(ChatFormatting.AQUA));
     }
   }
-
 }

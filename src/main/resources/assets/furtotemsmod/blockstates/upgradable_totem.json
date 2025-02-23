@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "furtotemsmod:block/upgradable_totem" },
+    "facing=east": { "model": "furtotemsmod:block/upgradable_totem"},
+    "facing=south": { "model": "furtotemsmod:block/upgradable_totem"},
+    "facing=west": { "model": "furtotemsmod:block/upgradable_totem"}
+  }
+}

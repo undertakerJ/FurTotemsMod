@@ -13,6 +13,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.undertaker.furtotemsmod.attributes.ModAttributes;
 import net.undertaker.furtotemsmod.blocks.ModBlockEntities;
 import net.undertaker.furtotemsmod.blocks.ModBlocks;
+import net.undertaker.furtotemsmod.commands.FurTotemsCommands;
 import net.undertaker.furtotemsmod.items.ModCreativeTab;
 import net.undertaker.furtotemsmod.items.ModItems;
 import net.undertaker.furtotemsmod.networking.ModNetworking;
@@ -40,6 +41,7 @@ public class FurTotemsMod {
   public static final Logger LOGGER = LogUtils.getLogger();
   private void commonSetup(final FMLCommonSetupEvent event) {
     ModNetworking.register();
+    MinecraftForge.EVENT_BUS.register(new FurTotemsCommands());
   }
 
   @SubscribeEvent

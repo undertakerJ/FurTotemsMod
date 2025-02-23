@@ -35,15 +35,12 @@ public class ChangeModePacket {
                     TotemItem.StaffMode[] modes = TotemItem.StaffMode.values();
 
                     if (packet.modeIndex < 0 || packet.modeIndex >= modes.length) {
-                        System.err.println("Invalid modeIndex received: " + packet.modeIndex);
                         return;
                     }
 
                     TotemItem.StaffMode newMode = modes[packet.modeIndex];
                     tag.putString("Mode", newMode.name());
                     stack.setHoverName(Component.literal(stack.getItem().getName(stack).getString() + " (" + newMode.getDisplayName() + ")"));
-
-                    System.out.println("Mode updated to: " + newMode.name());
                 }
             }
         });

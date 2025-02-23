@@ -2,7 +2,10 @@ package net.undertaker.furtotemsmod.items.custom;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+
+import com.mojang.authlib.GameProfile;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -11,7 +14,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -31,6 +36,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.common.UsernameCache;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -44,7 +50,11 @@ import net.undertaker.furtotemsmod.data.ClientTotemSavedData;
 import net.undertaker.furtotemsmod.data.TotemSavedData;
 import net.undertaker.furtotemsmod.networking.ModNetworking;
 import net.undertaker.furtotemsmod.networking.packets.ChangeModePacket;
+import net.undertaker.furtotemsmod.networking.packets.SyncBlacklistPacket;
+import net.undertaker.furtotemsmod.networking.packets.SyncTotemsPacket;
+import net.undertaker.furtotemsmod.networking.packets.SyncWhitelistPacket;
 import net.undertaker.furtotemsmod.render.ClientTotemRadiusRender;
+import org.jetbrains.annotations.Nullable;
 
 @Mod.EventBusSubscriber(modid = FurTotemsMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class TotemItem extends Item {
@@ -220,7 +230,6 @@ public class TotemItem extends Item {
           Component.translatable("message.furtotemsmod.totem_overlaps_another_zone"), true);
       return InteractionResult.FAIL;
     }
-
     BlockState totemBlockState =
         ModBlocks.UPGRADABLE_TOTEM
             .get()
@@ -233,7 +242,7 @@ public class TotemItem extends Item {
       totemEntity.setOwner(player.getUUID());
       totemEntity.upgrade(initialType);
 
-      data.addTotem(totemPos, player.getUUID(), initialType.getRadius(), "Upgradable");
+      data.addTotem((ServerLevel) level, totemPos, player.getUUID(), initialType.getRadius(), "Upgradable");
 
       removeItemFromInventory(player, requiredBlock.asItem(), 1);
 
@@ -276,7 +285,7 @@ public class TotemItem extends Item {
       return InteractionResult.FAIL;
     }
 
-    level.destroyBlock(pos, false);
+    level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
 
     data.removeTotem(serverLevel, pos);
 
@@ -303,6 +312,7 @@ public class TotemItem extends Item {
     data.addMemberToTotem(player.getUUID(), pInteractionTarget.getUUID());
 
     player.displayClientMessage(Component.translatable("message.furtotemsmod.adding_member"), true);
+    ModNetworking.sendToPlayer(new SyncWhitelistPacket(data.getWhitelistPlayers()), (ServerPlayer) player);
     return InteractionResult.SUCCESS;
   }
 
@@ -346,6 +356,8 @@ public class TotemItem extends Item {
 
     player.displayClientMessage(
         Component.translatable("message.furtotemsmod.removing_member"), true);
+    ModNetworking.sendToPlayer(new SyncWhitelistPacket(data.getWhitelistPlayers()), (ServerPlayer) player);
+
     return InteractionResult.SUCCESS;
   }
 
@@ -365,9 +377,10 @@ public class TotemItem extends Item {
     }
 
     data.addToBlacklist(player.getUUID(), pInteractionTarget.getUUID());
-
     player.displayClientMessage(
         Component.translatable("message.furtotemsmod.adding_to_blacklist"), true);
+
+    ModNetworking.sendToPlayer(new SyncBlacklistPacket(data.getBlacklistPlayers()), (ServerPlayer) player);
     return InteractionResult.SUCCESS;
   }
 
@@ -389,6 +402,8 @@ public class TotemItem extends Item {
 
     player.displayClientMessage(
         Component.translatable("message.furtotemsmod.removing_from_blacklist"), true);
+
+    ModNetworking.sendToPlayer(new SyncBlacklistPacket(data.getBlacklistPlayers()), (ServerPlayer) player);
     return InteractionResult.SUCCESS;
   }
 
@@ -405,6 +420,7 @@ public class TotemItem extends Item {
     }
   }
 
+  @OnlyIn(Dist.CLIENT)
   @Override
   public void inventoryTick(
       ItemStack pStack, Level pLevel, Entity pEntity, int pSlotId, boolean pIsSelected) {
@@ -416,53 +432,102 @@ public class TotemItem extends Item {
     }
   }
 
+  @OnlyIn(Dist.CLIENT)
   @Override
-  public void appendHoverText(
-      ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
+  public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
+    Player clientPlayer = Minecraft.getInstance().player;
+    if (clientPlayer == null) return;
+
     ClientTotemSavedData clientData = ClientTotemSavedData.get();
     Map<BlockPos, TotemSavedData.TotemData> totemDataMap = clientData.getTotemDataMap();
 
-    if (Screen.hasShiftDown()) {
-      CompoundTag tag = stack.getOrCreateTag();
-      StaffMode currentMode;
-      try {
-        currentMode = StaffMode.valueOf(tag.getString("Mode"));
-      } catch (IllegalArgumentException | NullPointerException e) {
-        currentMode = StaffMode.PLACE_TOTEM;
-      }
+    if (totemDataMap == null || clientData.getWhitelistPlayers() == null || clientData.getBlacklistPlayers() == null) {
+      pTooltipComponents.add(Component.translatable("message.furtotemsmod.data_not_loaded")
+              .withStyle(ChatFormatting.RED));
+      return;
+    }
 
-      tooltip.add(
-          Component.translatable("message.furtotemsmod.mode_description." + currentMode.name())
-              .withStyle(ChatFormatting.GRAY));
+    StaffMode currentMode;
+    CompoundTag tag = pStack.getOrCreateTag();
+    try{
+      currentMode = StaffMode.valueOf(tag.getString("Mode"));
+    } catch (IllegalArgumentException | NullPointerException e) {
+      currentMode = StaffMode.PLACE_TOTEM;
+    }
 
+    if(!Screen.hasShiftDown()){
+      pTooltipComponents.add(
+              Component.translatable("message.furtotemsmod.mode_description." + currentMode.name())
+                      .withStyle(ChatFormatting.GRAY)
+      );
+      pTooltipComponents.add(
+              Component.translatable("message.furtotemsmod.hold_shift_for_details")
+                      .withStyle(ChatFormatting.DARK_GRAY)
+      );
     } else {
-      tooltip.add(
-          Component.translatable("message.furtotemsmod.hold_shift_for_details")
-              .withStyle(ChatFormatting.DARK_GRAY));
-
-      long bigTotemCount =
-          totemDataMap.values().stream()
-              .filter(data -> "Upgradable".equals(data.getType()))
-              .count();
-
-      tooltip.add(
-          Component.translatable("message.furtotemsmod.big_totem_count", bigTotemCount)
-              .withStyle(ChatFormatting.AQUA));
-
-      if (!totemDataMap.isEmpty()) {
-        tooltip.add(
-            Component.translatable("message.furtotemsmod.totem_locations")
-                .withStyle(ChatFormatting.GOLD));
-        for (Map.Entry<BlockPos, TotemSavedData.TotemData> entry : totemDataMap.entrySet()) {
-          if ("Upgradable".equals(entry.getValue().getType())) {
-            tooltip.add(Component.literal(entry.getKey().toShortString()));
-          }
-        }
-      } else {
-        tooltip.add(
-            Component.translatable("message.furtotemsmod.no_totems_found")
-                .withStyle(ChatFormatting.RED));
+      switch (currentMode){
+        case ADD_MEMBER, REMOVE_MEMBER:
+          displayPlayersList(clientData.getWhitelistPlayers(), clientPlayer , pTooltipComponents, "Members", ChatFormatting.GREEN);
+          break;
+          case PLACE_TOTEM, REMOVE_TOTEM:
+            displayTotemPositions(totemDataMap, clientPlayer, pTooltipComponents);
+          break;
+        case ADD_BLACKLIST, REMOVE_BLACKLIST:
+           displayPlayersList(clientData.getBlacklistPlayers(), clientPlayer , pTooltipComponents, "Blacklist", ChatFormatting.RED);
+          break;
       }
     }
+  }
+
+  private void displayPlayersList(Map<UUID, Set<UUID>> playerListMap, Player player, List<Component> tooltip, String listType, ChatFormatting color) {
+    if (playerListMap == null) {
+      tooltip.add(Component.translatable("message.furtotemsmod.data_not_loaded")
+              .withStyle(ChatFormatting.RED));
+      return;
+    }
+
+    Set<UUID> list = playerListMap.get(player.getUUID());
+    if (list == null || list.isEmpty()) {
+      tooltip.add(Component.translatable("message.furtotemsmod.no_players_in_list")
+              .withStyle(ChatFormatting.RED));
+      return;
+    }
+
+    tooltip.add(Component.literal(listType + ": ")
+            .withStyle(color));
+
+    list.forEach(uuid -> {
+      String playerName = getPlayerName(uuid);
+      tooltip.add(Component.literal("- " + playerName)
+              .withStyle(ChatFormatting.WHITE));
+    });
+  }
+
+
+  private void displayTotemPositions(Map<BlockPos, TotemSavedData.TotemData> totemDataMap, Player player, List<Component> tooltip) {
+    boolean found = false;
+    for (Map.Entry<BlockPos, TotemSavedData.TotemData> entry : totemDataMap.entrySet()) {
+      if (entry.getValue().getOwner().equals(player.getUUID())) {
+        tooltip.add(Component.literal("Totem Position: " + entry.getKey().toShortString())
+                .withStyle(ChatFormatting.AQUA));
+        found = true;
+      }
+    }
+    if (!found) {
+      tooltip.add(Component.translatable("message.furtotemsmod.no_totems_found")
+              .withStyle(ChatFormatting.RED));
+    }
+  }
+
+  private String getPlayerName(UUID uuid) {
+    Minecraft minecraft = Minecraft.getInstance();
+    if (minecraft.level != null) {
+      Player player = minecraft.level.getPlayerByUUID(uuid);
+      if (player != null) {
+        return player.getGameProfile().getName();
+      }
+    }
+    String cachedName = UsernameCache.getLastKnownUsername(uuid);
+    return cachedName != null ? cachedName : uuid.toString();
   }
 }

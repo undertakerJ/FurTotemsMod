@@ -8,13 +8,10 @@
   "item.furtotemsmod.gold_totemic_empowerment": "Золотое тотемное улучшение",
   "item.furtotemsmod.diamond_totemic_empowerment": "Алмазное тотемное улучшение",
   "item.furtotemsmod.netherite_totemic_empowerment": "Незеритовое тотемное улучшение",
-
   "itemGroup.furtotemstab": "Undertaker's Totems",
-
   "block.furtotemsmod.small_totem": "Малый тотем",
   "block.furtotemsmod.upgradable_totem": "Большой тотем",
   "block.furtotemsmod.white_fox_plushie": "Плюшевая Белая лиса",
-
   "message.furtotemsmod.hold_shift_for_details": "Удерживайте Shift для подробностей",
   "message.furtotemsmod.mode_description.PLACE_TOTEM": "Устанавливает новый тотем в мире.",
   "message.furtotemsmod.mode_description.REMOVE_TOTEM": "Удаляет тотем из мира.",
@@ -25,7 +22,6 @@
   "message.furtotemsmod.big_totem_count": "Большие тотемы: %s",
   "message.furtotemsmod.totem_locations": "Расположение тотемов:",
   "message.furtotemsmod.no_totems_found": "Тотемы не найдены",
-
   "message.furtotemsmod.add_member": "Игрок добавлен в список тотема",
   "message.furtotemsmod.add_to_blacklist": "Игрок добавлен в черный список.",
   "message.furtotemsmod.no_active_totem": "Поблизости нет активного тотема.",
@@ -48,16 +44,13 @@
   "message.furtotemsmod.upgrade_impossible_zones_overlap": "Улучшение невозможно: зоны тотемов перекрываются!",
   "message.furtotemsmod.invalid_totem_type": "Недопустимый тип тотема!",
   "message.furtotemsmod.must_use_totem_staff": "Нужно использовать тотемный посох!",
-
   "message.furtotemsmod.item_granted": "Спасибо за отличную идею для мода и постоянную поддержку. Возьмите эту плюшевую игрушку uwu",
-
   "action.furtotemsmod.place_totem": "Установить тотем",
   "action.furtotemsmod.remove_totem": "Удалить тотем",
   "action.furtotemsmod.add_member": "Добавить игрока в белый список",
   "action.furtotemsmod.remove_member": "Удалить игрока из белого списка",
   "action.furtotemsmod.add_blacklist": "Добавить игрока в черный список",
   "action.furtotemsmod.remove_blacklist": "Удалить игрока из черного списка",
-
   "message.furtotemsmod.nearby_spawner": "Нельзя установить тотем рядом со спавнерами!",
   "message.furtotemsmod.invalid_block_near_totem": "Недопустимый блок рядом с малым тотемом!",
   "message.furtotemsmod.mode_changed": "Режим изменен на: ",
@@ -81,5 +74,24 @@
   "message.furtotemsmod.more_light_level": "Здесь слишком темно. Нужен солнечный свет для установки тотема.",
   "message.furtotemsmod.totem_tooltip": "Тотем на: ",
   "message.furtotemsmod.enter_protection": "Вы входите в зону защиты игрока ",
-  "message.furtotemsmod.leave_protection": "Вы покидаете зону защиты игрока "
+  "message.furtotemsmod.leave_protection": "Вы покидаете зону защиты игрока ",
+  "message.furtotemsmod.no_players_in_list": "Нет игроков в списке.",
+  "message.furtotemsmod.data_not_loaded": "Дата не загружена!",
+  "command.add_block.failure.exist": "Ошибка. ID %1$s уже существует в черном списке.",
+  "command.add_block.success": "Блок %1$s успешно добавлен в черный список.",
+  "command.add_to_small_totem.failure.exist": "Ошибка. ID %1$s уже существует в конфиге.",
+  "command.add_to_small_totem.success": "Блок %1$s успешно добавлен в Малые Тотемы.",
+  "command.remove_from_small_totem.failure.exist": "Ошибка. Блока с ID %1$s не существует в конфиге.",
+  "command.remove_from_small_totem.success": "Блок с ID %1$s удален.",
+  "command.remove_block.failure.exist": "Ошибка. Блока с ID %1$s не существует в конфиге.",
+  "command.remove_block.success": "Блок с ID %1$s удален.",
+  "command.error.player_not_found": "Игрок не найден.",
+  "command.add_member.failure.exist": "Ошибка. %1$s - уже в вашем белом листе.",
+  "command.remove_member.failure.not_exist": "Ошибка. %1$s - не в вашем белом листе.",
+  "command.add_member.success": "Успешно добавлен %1$s - в ваш белый лист.",
+  "command.remove_member.success": "Успешно убран %1$s - из вашего белого листа.",
+  "command.add_blacklist.failure.exist": "Ошибка. %1$s - уже в вашем чёрном листе.",
+  "command.remove_blacklist.failure.not_exist": "Ошибка. %1$s - не в вашем чёрном листе.",
+  "command.add_blacklist.success": "Успешно добавлен %1$s - в ваш чёрный лист.",
+  "command.remove_blacklist.success": "Успешно убран %1$s - из вашего чёрного листа."
 }
